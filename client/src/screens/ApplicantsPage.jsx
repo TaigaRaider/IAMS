@@ -1,10 +1,46 @@
 const applicants = [
-  { id: 1, name: "John Doe", role: "Software Engineer", status: "In Review", applied: "2026-08-05" },
-  { id: 2, name: "Jane Smith", role: "Product Designer", status: "Shortlisted", applied: "2026-08-04" },
-  { id: 3, name: "Alex Kim", role: "Data Analyst", status: "Rejected", applied: "2026-08-03" },
-  { id: 4, name: "Maria Garcia", role: "HR Coordinator", status: "Hired", applied: "2026-08-02" },
-  { id: 5, name: "David Brown", role: "Backend Engineer", status: "In Review", applied: "2026-08-01" },
-  { id: 6, name: "Sara Lee", role: "UX Researcher", status: "Shortlisted", applied: "2026-07-30" },
+  {
+    id: 1,
+    name: "John Doe",
+    role: "Software Engineer",
+    status: "In Review",
+    applied: "2026-08-05",
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    role: "Product Designer",
+    status: "Shortlisted",
+    applied: "2026-08-04",
+  },
+  {
+    id: 3,
+    name: "Alex Kim",
+    role: "Data Analyst",
+    status: "Rejected",
+    applied: "2026-08-03",
+  },
+  {
+    id: 4,
+    name: "Maria Garcia",
+    role: "HR Coordinator",
+    status: "Hired",
+    applied: "2026-08-02",
+  },
+  {
+    id: 5,
+    name: "David Brown",
+    role: "Backend Engineer",
+    status: "In Review",
+    applied: "2026-08-01",
+  },
+  {
+    id: 6,
+    name: "Sara Lee",
+    role: "UX Researcher",
+    status: "Shortlisted",
+    applied: "2026-07-30",
+  },
 ];
 
 const initials = (name) =>
@@ -52,7 +88,9 @@ function ApplicantsPage() {
                 <td>{a.role}</td>
                 <td>{a.applied}</td>
                 <td>
-                  <span className={`status ${statusClass(a.status)}`}>{a.status}</span>
+                  <span className={`status ${statusClass(a.status)}`}>
+                    {a.status}
+                  </span>
                 </td>
               </tr>
             ))}

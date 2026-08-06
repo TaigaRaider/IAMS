@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export const LoginForm = () => {
   return (
     <div className="form login-form">
@@ -30,7 +32,7 @@ export const LoginForm = () => {
 
         <div className="reference">
           <span className="signup-reference">
-            Don't have an account? <a href="/signup">Sign up</a>
+            Don't have an account? <Link to="/signup">Sign up</Link>
           </span>
         </div>
       </form>
