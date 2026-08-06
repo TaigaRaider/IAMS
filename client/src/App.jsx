@@ -1,12 +1,23 @@
 import { useState } from "react";
-import { Bell, LayoutDashboard, Users, Briefcase, Plus, Menu } from "lucide-react";
+import {
+  Bell,
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  Plus,
+  Menu,
+} from "lucide-react";
 import "./App.css";
+import { SignUpPage } from "./screens/SignUpPage";
+import { LoginPage } from "./screens/LoginPage";
 
 function App() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <>
+      <SignUpPage />
+      <LoginPage />
       <header>
         <button
           className="menu-btn"

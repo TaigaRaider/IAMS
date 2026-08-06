@@ -131,7 +131,9 @@ header {
     font-weight: 500;
     text-align: left;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
 
     svg {
       width: 20px;
@@ -193,4 +195,75 @@ header {
     font-size: 15px;
     font-weight: 400;
   }
+}
+
+/**Pages**/
+.page {
+  display: flex;
+  align-items: center;
+  min-height: 100dvh;
+}
+
+/**Forms**/
+.form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  flex: 1 1 0%;
+  padding: 50px 35px;
+  height: 100vh;
+  max-width: 50%;
+}
+.access-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  max-width: 500px;
+}
+.form > h2 {
+  font-size: 36px;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+  max-width: 390px;
+  width: 100%;
+}
+.form > p {
+  margin-bottom: 23px;
+}
+.label {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 7px;
+}
+.field {
+  width: 100%;
+  height: 2.5rem;
+  padding: 10px 13px;
+  margin-bottom: 15px;
+  text-align: left;
+  border: solid rgba(128, 128, 128, 0.541) 1.5px;
+  border-radius: 11px;
+}
+.field:focus {
+  border: 2px solid #790101f3;
+}
+
+.submit-btn {
+  height: 2.5rem;
+  background-color: #790101f3;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 17px;
+}
+.reference {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: gray;
 }
