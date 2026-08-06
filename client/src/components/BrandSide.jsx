@@ -27,11 +27,11 @@ export const BrandSide = () => {
             <div className="status-bar"></div>
             <div
               className="status-bar"
-              style={{ "background-color": "rgba(255,255, 255, 0.23)" }}
+              style={{ "backgroundColor": "rgba(255,255, 255, 0.23)" }}
             ></div>
             <div
               className="status-bar"
-              style={{ "background-color": "rgba(255,255, 255, 0.23)" }}
+              style={{ "backgroundColor": "rgba(255,255, 255, 0.23)" }}
             ></div>
           </div>
         </div>
