@@ -131,7 +131,9 @@ header {
     font-weight: 500;
     text-align: left;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
 
     svg {
       width: 20px;
