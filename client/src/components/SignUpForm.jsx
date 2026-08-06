@@ -5,7 +5,7 @@ export const SignUpForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    navigate("/");
+    navigate("/dashboard");
   };
 
   return (
