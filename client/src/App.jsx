@@ -8,8 +8,8 @@ import {
   Plus,
   Menu,
 } from "lucide-react";
-import Dashboard from "./screens/Dashboard.jsx";
-import ApplicantsPage from "./screens/ApplicantsPage.jsx";
+import Dashboard from "./screens/AdminDashboard.jsx";
+import ApplicantsPage from "./screens/AdminApplicantsPage.jsx";
 import "./App.css";
 import { SignUpPage } from "./screens/SignUpPage";
 import { LoginPage } from "./screens/LoginPage";
