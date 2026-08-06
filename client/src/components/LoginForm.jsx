@@ -1,11 +1,18 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export const LoginForm = () => {
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    navigate("/dashboard");
+  };
+
   return (
     <div className="form login-form">
       <h2>Welcome Back👋</h2>
       <p>Sign in to track your application</p>
-      <form className="access-form" method="POST">
+      <form className="access-form" method="POST" onSubmit={handleSubmit}>
         <label className="label username-label" htmlFor="username-field">
           Username:
         </label>
