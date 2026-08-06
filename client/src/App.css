@@ -529,4 +529,18 @@ header {
   justify-content: center;
   font-size: 14px;
   color: gray;
+  margin-top: 4px;
+
+  .signup-reference {
+    color: #6b6375;
+
+    a {
+      color: #790101f3;
+      font-weight: 600;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
 }

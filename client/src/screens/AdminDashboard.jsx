@@ -102,22 +102,30 @@ function Overview() {
           <ul className="dept-list">
             <li>
               <span>Engineering</span>
-              <div className="bar"><div style={{ width: "75%" }}></div></div>
+              <div className="bar">
+                <div style={{ width: "75%" }}></div>
+              </div>
               <span className="count">6</span>
             </li>
             <li>
               <span>Design</span>
-              <div className="bar"><div style={{ width: "50%" }}></div></div>
+              <div className="bar">
+                <div style={{ width: "50%" }}></div>
+              </div>
               <span className="count">4</span>
             </li>
             <li>
               <span>Data</span>
-              <div className="bar"><div style={{ width: "38%" }}></div></div>
+              <div className="bar">
+                <div style={{ width: "38%" }}></div>
+              </div>
               <span className="count">3</span>
             </li>
             <li>
               <span>HR</span>
-              <div className="bar"><div style={{ width: "25%" }}></div></div>
+              <div className="bar">
+                <div style={{ width: "25%" }}></div>
+              </div>
               <span className="count">2</span>
             </li>
           </ul>
@@ -156,28 +164,36 @@ function AdminDashboard() {
             <NavLink
               to="/dashboard"
               end
-              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+              className={({ isActive }) =>
+                `nav-item${isActive ? " active" : ""}`
+              }
             >
               <LayoutDashboard />
               <span>Dashboard</span>
             </NavLink>
             <NavLink
               to="/dashboard/applicants"
-              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+              className={({ isActive }) =>
+                `nav-item${isActive ? " active" : ""}`
+              }
             >
               <Users />
               <span>Applicants</span>
             </NavLink>
             <NavLink
               to="/dashboard/offers"
-              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+              className={({ isActive }) =>
+                `nav-item${isActive ? " active" : ""}`
+              }
             >
               <Briefcase />
               <span>Offers</span>
             </NavLink>
             <NavLink
               to="/dashboard/add"
-              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+              className={({ isActive }) =>
+                `nav-item${isActive ? " active" : ""}`
+              }
             >
               <Plus />
               <span>Add</span>
