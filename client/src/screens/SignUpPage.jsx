@@ -3,7 +3,7 @@ import { BrandSide } from "../components/BrandSide";
 
 export const SignUpPage = () => {
   return (
-    <section className="page signup-page">
+    <section className="entry-page signup-page">
       <BrandSide />
       <SignUpForm />
     </section>

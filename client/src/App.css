@@ -459,7 +459,7 @@ header {
 }
 
 /**Pages**/
-.page {
+.entry-page {
   display: flex;
   align-items: center;
   min-height: 100dvh;
