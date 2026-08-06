@@ -1,9 +1,18 @@
+import { useNavigate, Link } from "react-router-dom";
+
 export const SignUpForm = () => {
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    navigate("/");
+  };
+
   return (
     <div className="form signup-form">
       <h2>Create your account</h2>
       <p>Start your internship application</p>
-      <form className="access-form" method="POST">
+      <form className="access-form" method="POST" onSubmit={handleSubmit}>
         <label className="label username-label" htmlFor="ful-name-field">
           Full name:
         </label>
@@ -55,7 +64,7 @@ export const SignUpForm = () => {
         <div className="reference"></div>
         <div className="reference">
           <span className="signup-reference">
-            Already have an account? <a href="/login">Sign in</a>
+            Already have an account? <Link to="/login">Sign in</Link>
           </span>
         </div>
       </form>
