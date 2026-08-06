@@ -136,7 +136,9 @@ function Overview() {
 }
 
 function AdminDashboard() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(
+    () => window.innerWidth <= 768,
+  );
 
   return (
     <>
