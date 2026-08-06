@@ -1,12 +1,19 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, Link, Routes, Route } from "react-router-dom";
 import {
-  FileText,
+  Bell,
+  LayoutDashboard,
+  Users,
   Briefcase,
+  Plus,
+  Menu,
+  FileText,
   CalendarClock,
   BadgeCheck,
 } from "lucide-react";
+import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 
-function Dashboard() {
+function Overview() {
   return (
     <>
       <div className="intcards">
@@ -51,7 +58,7 @@ function Dashboard() {
         <div className="card">
           <div className="card-head">
             <h2>Recent Applicants</h2>
-            <Link to="/applicants" className="view-all">
+            <Link to="/dashboard/applicants" className="view-all">
               View all
             </Link>
           </div>
@@ -120,4 +127,72 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+function AdminDashboard() {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <>
+      <header>
+        <button
+          className="menu-btn"
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label="Toggle sidebar"
+        >
+          <Menu />
+        </button>
+        <img src="/iamslogo.png" alt="Logo" className="logo" />
+        <input type="text" placeholder="Search..." />
+        <div className="actions">
+          <Bell className="bell" />
+          <svg className="avatar" viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="24" r="14" fill="#f0e6ff" />
+            <path d="M10 58c4-14 12-18 22-18s18 4 22 18" fill="#f0e6ff" />
+          </svg>
+        </div>
+      </header>
+      <div className="layout">
+        <aside className={collapsed ? "sidebar collapsed" : "sidebar"}>
+          <nav>
+            <NavLink
+              to="/dashboard"
+              end
+              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+            >
+              <LayoutDashboard />
+              <span>Dashboard</span>
+            </NavLink>
+            <NavLink
+              to="/dashboard/applicants"
+              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+            >
+              <Users />
+              <span>Applicants</span>
+            </NavLink>
+            <NavLink
+              to="/dashboard/offers"
+              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+            >
+              <Briefcase />
+              <span>Offers</span>
+            </NavLink>
+            <NavLink
+              to="/dashboard/add"
+              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+            >
+              <Plus />
+              <span>Add</span>
+            </NavLink>
+          </nav>
+        </aside>
+        <main className="content">
+          <Routes>
+            <Route index element={<Overview />} />
+            <Route path="applicants" element={<AdminApplicantsPage />} />
+          </Routes>
+        </main>
+      </div>
+    </>
+  );
+}
+
+export default AdminDashboard;

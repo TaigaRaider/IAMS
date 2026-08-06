@@ -157,17 +157,19 @@ header {
 
 .content {
   flex: 1;
+  min-width: 0;
   padding: 32px 24px;
 }
 
 .intcards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(200px, 1fr));
   gap: 24px;
   margin: 32px auto;
   padding: 0 24px;
   max-width: 1200px;
   text-align: left;
+  overflow-x: auto;
 }
 
 .intcard {
