@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Bell, LayoutDashboard, Users, Briefcase, Plus, Menu } from "lucide-react";
+import {
+  Bell,
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  Plus,
+  Menu,
+} from "lucide-react";
 import "./App.css";
 
 function App() {
