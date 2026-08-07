@@ -600,6 +600,253 @@ header {
   }
 }
 
+.card {
+  background: var(--card-background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+/**Applicant Page**/
+.applicant-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  min-width: 0;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+.applicant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  background: var(--card-background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+
+.applicant-subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+
+.applicant-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.progress-card,
+.events-card,
+.messages-card {
+  h2 {
+    margin: 0 0 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+}
+
+.progress-steps {
+  display: flex;
+  flex-direction: column;
+}
+
+.step {
+  display: flex;
+  gap: 14px;
+  position: relative;
+  padding-bottom: 24px;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 15px;
+    top: 30px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  &.step-done::before {
+    background: var(--success);
+  }
+
+  &:last-child::before {
+    display: none;
+  }
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.step-done .step-dot {
+  background: var(--success);
+  color: var(--primary-foreground);
+}
+
+.step-active .step-dot {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.step-upcoming .step-dot {
+  background: var(--card-background);
+  border: 2px solid var(--border);
+}
+
+.step-num {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.step-info {
+  display: flex;
+  flex-direction: column;
+  padding-top: 5px;
+
+  strong {
+    font-size: 14px;
+    color: var(--heading);
+  }
+
+  span {
+    font-size: 13px;
+    color: var(--muted);
+  }
+}
+
+.events-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.event-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .event-icon {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .event-info {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      font-size: 14px;
+      color: var(--heading);
+    }
+
+    span {
+      font-size: 13px;
+      color: var(--muted);
+    }
+  }
+}
+
+.messages-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .avatar-mini {
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
+
+  &.unread .avatar-mini {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .message-content {
+    flex: 1;
+    min-width: 0;
+
+    p {
+      margin: 4px 0 0;
+      font-size: 14px;
+      color: var(--foreground);
+    }
+  }
+
+  .message-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+
+    strong {
+      font-size: 14px;
+      color: var(--heading);
+    }
+
+    span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+  }
+
+  &.unread .message-meta strong {
+    color: var(--primary);
+  }
+}
+
 /**Responsive**/
 @media (max-width: 1024px) {
   .intcards {
@@ -753,5 +1000,9 @@ header {
   .applicants-table td {
     padding: 12px 10px;
     font-size: 13px;
+  }
+
+  .applicant-grid {
+    grid-template-columns: 1fr;
   }
 }
