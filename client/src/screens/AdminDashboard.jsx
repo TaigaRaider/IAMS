@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink, Link, Routes, Route } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Link, Routes, Route, useNavigate } from "react-router-dom";
 import {
   Bell,
   LayoutDashboard,
@@ -10,10 +10,46 @@ import {
   FileText,
   CalendarClock,
   BadgeCheck,
+  LogOut,
 } from "lucide-react";
+import { api, getToken, logout } from "../api";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 
 function Overview() {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
+  const [applications, setApplications] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [statData, appData] = await Promise.all([
+          api("/dashboard/stats", { token: getToken() }),
+          api("/applications", { token: getToken() }),
+        ]);
+        setStats(statData);
+        setApplications(appData);
+      } catch (err) {
+        if (String(err.message).includes("token") || String(err.message).includes("401")) {
+          logout();
+          navigate("/login", { replace: true });
+        } else {
+          setError(err.message);
+        }
+      }
+    })();
+  }, [navigate]);
+
+  if (error) return <p className="form-error">{error}</p>;
+  if (!stats) return <p>Loading...</p>;
+
+  const recent = applications.slice(0, 4);
+  const depts = stats.applicationsByDepartment;
+  const maxDeptCount = depts.length
+    ? Math.max(...depts.map((d) => Number(d.count)))
+    : 0;
+
   return (
     <>
       <div className="intcards">
@@ -24,7 +60,7 @@ function Overview() {
               <FileText />
             </span>
           </div>
-          <h1>15</h1>
+          <h1>{stats.totalApplications}</h1>
         </div>
         <div className="intcard">
           <div className="card-top">
@@ -33,7 +69,7 @@ function Overview() {
               <Briefcase />
             </span>
           </div>
-          <h1>8</h1>
+          <h1>{stats.openRoles}</h1>
         </div>
         <div className="intcard">
           <div className="card-top">
@@ -42,7 +78,7 @@ function Overview() {
               <CalendarClock />
             </span>
           </div>
-          <h1>5</h1>
+          <h1>{stats.pendingInterviews}</h1>
         </div>
         <div className="intcard">
           <div className="card-top">
@@ -51,7 +87,7 @@ function Overview() {
               <BadgeCheck />
             </span>
           </div>
-          <h1>3</h1>
+          <h1>{stats.offersExtended}</h1>
         </div>
       </div>
       <div className="dash-grid">
@@ -62,86 +98,250 @@ function Overview() {
               View all
             </Link>
           </div>
-          <ul className="applicant-list">
-            <li>
-              <div className="avatar-mini">JD</div>
-              <div className="applicant-info">
-                <strong>John Doe</strong>
-                <span>Software Engineer</span>
-              </div>
-              <span className="status pending">In Review</span>
-            </li>
-            <li>
-              <div className="avatar-mini">JS</div>
-              <div className="applicant-info">
-                <strong>Jane Smith</strong>
-                <span>Product Designer</span>
-              </div>
-              <span className="status shortlisted">Shortlisted</span>
-            </li>
-            <li>
-              <div className="avatar-mini">AK</div>
-              <div className="applicant-info">
-                <strong>Alex Kim</strong>
-                <span>Data Analyst</span>
-              </div>
-              <span className="status rejected">Rejected</span>
-            </li>
-            <li>
-              <div className="avatar-mini">MG</div>
-              <div className="applicant-info">
-                <strong>Maria Garcia</strong>
-                <span>HR Coordinator</span>
-              </div>
-              <span className="status accepted">Hired</span>
-            </li>
-          </ul>
+          {recent.length === 0 ? (
+            <p>No applications yet.</p>
+          ) : (
+            <ul className="applicant-list">
+              {recent.map((app) => (
+                <li key={app.id}>
+                  <div className="avatar-mini">
+                    {(app.applicant_name ?? "?")
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div className="applicant-info">
+                    <strong>{app.applicant_name}</strong>
+                    <span>{app.role_title}</span>
+                  </div>
+                  <span
+                    className={`status ${
+                      app.status === "Shortlisted"
+                        ? "shortlisted"
+                        : app.status === "Rejected"
+                          ? "rejected"
+                          : app.status === "Hired"
+                            ? "accepted"
+                            : "pending"
+                    }`}
+                  >
+                    {app.status}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="card">
           <h2>Applications by Department</h2>
-          <ul className="dept-list">
-            <li>
-              <span>Engineering</span>
-              <div className="bar">
-                <div style={{ width: "75%" }}></div>
-              </div>
-              <span className="count">6</span>
-            </li>
-            <li>
-              <span>Design</span>
-              <div className="bar">
-                <div style={{ width: "50%" }}></div>
-              </div>
-              <span className="count">4</span>
-            </li>
-            <li>
-              <span>Data</span>
-              <div className="bar">
-                <div style={{ width: "38%" }}></div>
-              </div>
-              <span className="count">3</span>
-            </li>
-            <li>
-              <span>HR</span>
-              <div className="bar">
-                <div style={{ width: "25%" }}></div>
-              </div>
-              <span className="count">2</span>
-            </li>
-          </ul>
+          {depts.length === 0 ? (
+            <p>No data yet.</p>
+          ) : (
+            <ul className="dept-list">
+              {depts.map((dept) => (
+                <li key={dept.department}>
+                  <span>{dept.department}</span>
+                  <div className="bar">
+                    <div
+                      style={{
+                        width: `${maxDeptCount ? (Number(dept.count) / maxDeptCount) * 100 : 0}%`,
+                      }}
+                    ></div>
+                  </div>
+                  <span className="count">{dept.count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </>
   );
 }
 
-function AdminDashboard() {
-  const [collapsed, setCollapsed] = useState(
-    () => window.innerWidth <= 768,
+function OffersPage() {
+  const navigate = useNavigate();
+  const [offers, setOffers] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api("/offers", { token: getToken() });
+        setOffers(data);
+      } catch (err) {
+        if (String(err.message).includes("token") || String(err.message).includes("401")) {
+          logout();
+          navigate("/login", { replace: true });
+        } else {
+          setError(err.message);
+        }
+      }
+    })();
+  }, [navigate]);
+
+  return (
+    <div className="page">
+      <h1 className="page-title">Offers</h1>
+      {error && <p className="form-error">{error}</p>}
+      <div className="card table-card">
+        {offers.length === 0 ? (
+          <p>No offers extended yet.</p>
+        ) : (
+          <table className="applicants-table">
+            <thead>
+              <tr>
+                <th>Applicant</th>
+                <th>Status</th>
+                <th>Extended On</th>
+              </tr>
+            </thead>
+            <tbody>
+              {offers.map((o) => (
+                <tr key={o.id}>
+                  <td>
+                    <div className="applicant-cell">
+                      <div className="avatar-mini">
+                        {(o.applicant_name ?? "?")
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </div>
+                      <strong>{o.applicant_name}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <span
+                      className={`status ${
+                        o.status === "Accepted"
+                          ? "accepted"
+                          : o.status === "Declined"
+                            ? "rejected"
+                            : "pending"
+                      }`}
+                    >
+                      {o.status}
+                    </span>
+                  </td>
+                  <td>{o.created_at}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   );
+}
+
+function AddRolePage() {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState("");
+  const [department, setDepartment] = useState("");
+  const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    try {
+      await api("/roles", {
+        method: "POST",
+        body: { title, department, description: description || null },
+        token: getToken(),
+      });
+      setSuccess("Role created successfully.");
+      setTitle("");
+      setDepartment("");
+      setDescription("");
+    } catch (err) {
+      if (String(err.message).includes("token") || String(err.message).includes("401")) {
+        logout();
+        navigate("/login", { replace: true });
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page">
+      <h1 className="page-title">Add Role</h1>
+      <div className="card" style={{ maxWidth: 520 }}>
+        {error && <p className="form-error">{error}</p>}
+        {success && <p className="form-success">{success}</p>}
+        <form className="access-form" onSubmit={handleSubmit}>
+          <label className="label" htmlFor="role-title-field">
+            Title:
+          </label>
+          <input
+            className="field"
+            type="text"
+            id="role-title-field"
+            name="title"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Software Engineer"
+          />
+          <label className="label" htmlFor="role-department-field">
+            Department:
+          </label>
+          <input
+            className="field"
+            type="text"
+            id="role-department-field"
+            name="department"
+            required
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            placeholder="Engineering"
+          />
+          <label className="label" htmlFor="role-description-field">
+            Description (optional):
+          </label>
+          <textarea
+            className="field"
+            id="role-description-field"
+            name="description"
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What will the intern do?"
+          />
+          <input
+            className="submit-btn"
+            type="submit"
+            value={loading ? "Creating..." : "Create Role"}
+            disabled={loading}
+          />
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function AdminDashboard() {
+  const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(() => window.innerWidth <= 768);
 
   const closeOnMobile = () => {
     if (window.innerWidth <= 768) setCollapsed(true);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -162,6 +362,9 @@ function AdminDashboard() {
             <circle cx="32" cy="24" r="14" fill="#f0e6ff" />
             <path d="M10 58c4-14 12-18 22-18s18 4 22 18" fill="#f0e6ff" />
           </svg>
+          <button className="logout-btn" onClick={handleLogout} aria-label="Log out">
+            <LogOut size={18} />
+          </button>
         </div>
       </header>
       {!collapsed && <div className="backdrop" onClick={closeOnMobile} />}
@@ -215,6 +418,8 @@ function AdminDashboard() {
           <Routes>
             <Route index element={<Overview />} />
             <Route path="applicants" element={<AdminApplicantsPage />} />
+            <Route path="offers" element={<OffersPage />} />
+            <Route path="add" element={<AddRolePage />} />
           </Routes>
         </main>
       </div>

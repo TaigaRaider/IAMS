@@ -1,68 +1,92 @@
-import {
-  Check,
-  Clock,
-  Calendar,
-  Video,
-  FileText,
-  MessageSquare,
-} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Check, Clock, X, Briefcase, FileText, UserCheck } from "lucide-react";
+import { api, getToken, logout } from "../api";
 
-const steps = [
-  { label: "Applied", detail: "Submitted on Aug 2", state: "done" },
-  { label: "Screening", detail: "Currently reviewing", state: "active" },
-  { label: "Interview", detail: "Pending", state: "upcoming" },
-  { label: "Decision", detail: "Awaiting outcome", state: "upcoming" },
-];
+const STATUS_INFO = {
+  "In Review": {
+    className: "pending",
+    icon: Clock,
+    title: "In Review",
+    text: "Your application is currently under review.",
+  },
+  Shortlisted: {
+    className: "shortlisted",
+    icon: UserCheck,
+    title: "Shortlisted",
+    text: "You have been shortlisted for this role — the team will reach out about next steps.",
+  },
+  Hired: {
+    className: "accepted",
+    icon: Check,
+    title: "Hired",
+    text: "Congratulations! You have been hired.",
+  },
+  Rejected: {
+    className: "rejected",
+    icon: X,
+    title: "Rejected",
+    text: "Unfortunately, this application was not successful.",
+  },
+};
 
-const events = [
-  {
-    icon: Video,
-    title: "Interview Prep Webinar",
-    date: "Aug 12",
-    time: "2:00 PM",
-  },
-  {
-    icon: Calendar,
-    title: "Virtual Info Session",
-    date: "Aug 18",
-    time: "11:00 AM",
-  },
-  {
-    icon: FileText,
-    title: "Application Deadline",
-    date: "Aug 25",
-    time: "11:59 PM",
-  },
-];
-
-const messages = [
-  {
-    from: "IAMS Team",
-    text: "Thanks for applying! Your application is now in screening.",
-    time: "2h ago",
-    unread: true,
-  },
-  {
-    from: "Talent Coordinator",
-    text: "We received your resume. We'll reach out if there's a fit.",
-    time: "1d ago",
-    unread: false,
-  },
-  {
-    from: "IAMS Team",
-    text: "Reminder: complete your profile to improve your chances.",
-    time: "3d ago",
-    unread: false,
-  },
-];
-
-function StepIcon({ state }) {
-  if (state === "done") return <Check size={16} />;
-  if (state === "active") return <Clock size={16} />;
-  return <span className="step-num" />;
-}
+const statusClass = (status) => STATUS_INFO[status]?.className ?? "pending";
 
 function ApplicantPage() {
+  const navigate = useNavigate();
+  const [applications, setApplications] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [error, setError] = useState("");
+  const [applying, setApplying] = useState(null);
+
+  const handleUnauthorized = useCallback((err) => {
+    if (String(err.message).includes("token") || String(err.message).includes("401")) {
+      logout();
+      navigate("/login", { replace: true });
+      return true;
+    }
+    return false;
+  }, [navigate]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [apps, roleData] = await Promise.all([
+          api("/applications", { token: getToken() }),
+          api("/roles"),
+        ]);
+        setApplications(apps);
+        setRoles(roleData);
+      } catch (err) {
+        if (!handleUnauthorized(err)) setError(err.message);
+      }
+    })();
+  }, [handleUnauthorized]);
+
+  const latest = applications[0] ?? null;
+  const current = latest ? STATUS_INFO[latest.status] ?? STATUS_INFO["In Review"] : null;
+  const StatusIcon = current?.icon ?? Clock;
+
+  const apply = async (roleId) => {
+    setApplying(roleId);
+    setError("");
+    try {
+      await api("/applications", {
+        method: "POST",
+        body: { role_id: roleId },
+        token: getToken(),
+      });
+      const apps = await api("/applications", { token: getToken() });
+      setApplications(apps);
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setApplying(null);
+    }
+  };
+
+  const appliedRoleIds = new Set(applications.map((a) => a.role_id));
+
   return (
     <div className="applicant-page">
       <div className="applicant-header">
@@ -72,75 +96,100 @@ function ApplicantPage() {
             Track your internship application from here.
           </p>
         </div>
-        <span className="status pending">In Review</span>
+        {latest && (
+          <span className={`status ${statusClass(latest.status)}`}>
+            {latest.status}
+          </span>
+        )}
       </div>
+
+      {error && <p className="form-error">{error}</p>}
 
       <div className="applicant-grid">
         <section className="card progress-card">
-          <h2>Application Progress</h2>
-          <div className="progress-steps">
-            {steps.map((step) => (
-              <div
-                key={step.label}
-                className={`step step-${step.state}`}
-              >
-                <div className="step-dot">
-                  <StepIcon state={step.state} />
-                </div>
-                <div className="step-info">
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
+          <h2>Current Status</h2>
+          {latest && current ? (
+            <div className="current-status">
+              <div className={`current-status-icon ${current.className}`}>
+                <StatusIcon size={22} />
               </div>
-            ))}
-          </div>
+              <div className="current-status-info">
+                <strong>{current.title}</strong>
+                <p>{current.text}</p>
+                <span className="current-status-meta">
+                  {latest.role_title} · Applied {latest.applied_at}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p>
+              You have not applied to any role yet — pick one below to get
+              started.
+            </p>
+          )}
         </section>
 
-        <section className="card events-card">
-          <h2>Events</h2>
-          <ul className="events-list">
-            {events.map((event) => (
-              <li key={event.title} className="event-item">
-                <div className="event-icon">
-                  <event.icon size={18} />
-                </div>
-                <div className="event-info">
-                  <strong>{event.title}</strong>
-                  <span>
-                    {event.date} · {event.time}
-                  </span>
-                </div>
-              </li>
-            ))}
+        <section className="card roles-card">
+          <h2>Open Roles</h2>
+          <ul className="roles-list">
+            {roles.length === 0 && <li>No roles available right now.</li>}
+            {roles
+              .filter((role) => role.status === "open")
+              .map((role) => (
+                <li key={role.id} className="role-item">
+                  <div className="event-icon">
+                    <Briefcase size={18} />
+                  </div>
+                  <div className="event-info">
+                    <strong>{role.title}</strong>
+                    <span>{role.department}</span>
+                  </div>
+                  {appliedRoleIds.has(role.id) ? (
+                    <span className="status accepted">Applied</span>
+                  ) : (
+                    <button
+                      className="apply-btn"
+                      onClick={() => apply(role.id)}
+                      disabled={applying === role.id}
+                    >
+                      {applying === role.id ? "Applying..." : "Apply"}
+                    </button>
+                  )}
+                </li>
+              ))}
           </ul>
         </section>
       </div>
 
-      <section className="card messages-card">
-        <div className="card-head">
-          <h2>Messages</h2>
-          <span className="view-all">3 total</span>
-        </div>
-        <ul className="messages-list">
-          {messages.map((message) => (
-            <li
-              key={message.text}
-              className={`message-item${message.unread ? " unread" : ""}`}
-            >
-              <div className="avatar-mini">
-                <MessageSquare size={16} />
-              </div>
-              <div className="message-content">
-                <div className="message-meta">
-                  <strong>{message.from}</strong>
-                  <span>{message.time}</span>
+      {applications.length > 0 && (
+        <section className="card messages-card">
+          <div className="card-head">
+            <h2>My Applications</h2>
+            <span className="view-all">{applications.length} total</span>
+          </div>
+          <ul className="messages-list">
+            {applications.map((app) => (
+              <li key={app.id} className="message-item">
+                <div className="avatar-mini">
+                  <FileText size={16} />
                 </div>
-                <p>{message.text}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+                <div className="message-content">
+                  <div className="message-meta">
+                    <strong>{app.role_title}</strong>
+                    <span>{app.applied_at}</span>
+                  </div>
+                  <p>
+                    Applied for <strong>{app.role_title}</strong>
+                  </p>
+                </div>
+                <span className={`status ${statusClass(app.status)}`}>
+                  {app.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
