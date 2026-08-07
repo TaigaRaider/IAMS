@@ -6,10 +6,10 @@
   --heading: #08060d;
   --muted: #6b6375;
 
-  --primary: #800000;
+  --primary: #27272a;
   --primary-foreground: #fff;
-  --primary-hover: #660000;
-  --primary-soft: rgba(128, 0, 0, 0.1);
+  --primary-hover: #404040;
+  --primary-soft: rgba(39, 39, 42, 0.1);
   --on-primary: rgba(255, 255, 255, 0.15);
   --on-primary-hover: rgba(255, 255, 255, 0.3);
 
@@ -17,7 +17,7 @@
   --card-background: #fff;
   --input-background: #fff;
   --input-border: rgba(128, 128, 128, 0.5);
-  --input-border-focus: #800000;
+  --input-border-focus: oklch(27.8% 0.033 256.848);
 
   --success: #008000;
   --success-bg: rgba(0, 150, 0, 0.12);
@@ -29,7 +29,7 @@
   --info-bg: rgba(170, 59, 255, 0.12);
 
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 28px rgba(128, 0, 0, 0.15);
+  --shadow-lg: 0 12px 28px rgba(39, 39, 42, 0.15);
 
   --radius-sm: 8px;
   --radius-md: 12px;
