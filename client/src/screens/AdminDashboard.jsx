@@ -140,6 +140,10 @@ function AdminDashboard() {
     () => window.innerWidth <= 768,
   );
 
+  const closeOnMobile = () => {
+    if (window.innerWidth <= 768) setCollapsed(true);
+  };
+
   return (
     <>
       <header>
@@ -160,12 +164,14 @@ function AdminDashboard() {
           </svg>
         </div>
       </header>
+      {!collapsed && <div className="backdrop" onClick={closeOnMobile} />}
       <div className="layout">
         <aside className={collapsed ? "sidebar collapsed" : "sidebar"}>
           <nav>
             <NavLink
               to="/dashboard"
               end
+              onClick={closeOnMobile}
               className={({ isActive }) =>
                 `nav-item${isActive ? " active" : ""}`
               }
@@ -175,6 +181,7 @@ function AdminDashboard() {
             </NavLink>
             <NavLink
               to="/dashboard/applicants"
+              onClick={closeOnMobile}
               className={({ isActive }) =>
                 `nav-item${isActive ? " active" : ""}`
               }
@@ -184,6 +191,7 @@ function AdminDashboard() {
             </NavLink>
             <NavLink
               to="/dashboard/offers"
+              onClick={closeOnMobile}
               className={({ isActive }) =>
                 `nav-item${isActive ? " active" : ""}`
               }
@@ -193,6 +201,7 @@ function AdminDashboard() {
             </NavLink>
             <NavLink
               to="/dashboard/add"
+              onClick={closeOnMobile}
               className={({ isActive }) =>
                 `nav-item${isActive ? " active" : ""}`
               }
