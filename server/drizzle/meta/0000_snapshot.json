@@ -1,0 +1,346 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "717d80d0-458c-4f1c-a5c0-abe90acd3752",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "applications": {
+      "name": "applications",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "applicant_id": {
+          "name": "applicant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role_id": {
+          "name": "role_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'In Review'"
+        },
+        "applied_at": {
+          "name": "applied_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(datetime('now'))"
+        }
+      },
+      "indexes": {
+        "applications_applicant_id_role_id_unique": {
+          "name": "applications_applicant_id_role_id_unique",
+          "columns": [
+            "applicant_id",
+            "role_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "applications_applicant_id_users_id_fk": {
+          "name": "applications_applicant_id_users_id_fk",
+          "tableFrom": "applications",
+          "tableTo": "users",
+          "columnsFrom": [
+            "applicant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "applications_role_id_roles_id_fk": {
+          "name": "applications_role_id_roles_id_fk",
+          "tableFrom": "applications",
+          "tableTo": "roles",
+          "columnsFrom": [
+            "role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "interviews": {
+      "name": "interviews",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "application_id": {
+          "name": "application_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scheduled_at": {
+          "name": "scheduled_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Pending'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "interviews_application_id_applications_id_fk": {
+          "name": "interviews_application_id_applications_id_fk",
+          "tableFrom": "interviews",
+          "tableTo": "applications",
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "offers": {
+      "name": "offers",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "application_id": {
+          "name": "application_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Extended'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(datetime('now'))"
+        }
+      },
+      "indexes": {
+        "offers_application_id_unique": {
+          "name": "offers_application_id_unique",
+          "columns": [
+            "application_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "offers_application_id_applications_id_fk": {
+          "name": "offers_application_id_applications_id_fk",
+          "tableFrom": "offers",
+          "tableTo": "applications",
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "roles": {
+      "name": "roles",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "department": {
+          "name": "department",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'open'"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(datetime('now'))"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_role": {
+          "name": "user_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'applicant'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(datetime('now'))"
+        }
+      },
+      "indexes": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true
+        },
+        "users_username_unique": {
+          "name": "users_username_unique",
+          "columns": [
+            "username"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

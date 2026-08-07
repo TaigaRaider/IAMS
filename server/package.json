@@ -11,14 +11,16 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@libsql/client": "^0.17.4",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.10",
     "nodemon": "^3.1.14"
   }
 }

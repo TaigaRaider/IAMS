@@ -1,14 +1,19 @@
-import Database from "better-sqlite3";
-import { readFileSync } from "node:fs";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import * as schema from "./db/schema.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const db = new Database(join(__dirname, "..", "data", "iams.db"));
 
-db.pragma("foreign_keys = ON");
+const url =
+  process.env.TURSO_DATABASE_URL ||
+  pathToFileURL(join(__dirname, "..", "data", "iams.db")).href;
 
-const schema = readFileSync(join(__dirname, "schema", "schema.sql"), "utf8");
-db.exec(schema);
+const authToken = process.env.TURSO_AUTH_TOKEN || undefined;
 
-export default db;
+const client = createClient({ url, authToken });
+
+client.execute("PRAGMA foreign_keys = ON");
+
+export const db = drizzle(client, { schema });

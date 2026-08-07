@@ -1,53 +1,16 @@
-const applicants = [
-  {
-    id: 1,
-    name: "John Doe",
-    role: "Software Engineer",
-    status: "In Review",
-    applied: "2026-08-05",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    role: "Product Designer",
-    status: "Shortlisted",
-    applied: "2026-08-04",
-  },
-  {
-    id: 3,
-    name: "Alex Kim",
-    role: "Data Analyst",
-    status: "Rejected",
-    applied: "2026-08-03",
-  },
-  {
-    id: 4,
-    name: "Maria Garcia",
-    role: "HR Coordinator",
-    status: "Hired",
-    applied: "2026-08-02",
-  },
-  {
-    id: 5,
-    name: "David Brown",
-    role: "Backend Engineer",
-    status: "In Review",
-    applied: "2026-08-01",
-  },
-  {
-    id: 6,
-    name: "Sara Lee",
-    role: "UX Researcher",
-    status: "Shortlisted",
-    applied: "2026-07-30",
-  },
-];
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api, getToken, logout } from "../api";
+
+const STATUSES = ["In Review", "Shortlisted", "Rejected", "Hired"];
 
 const initials = (name) =>
-  name
+  (name ?? "?")
     .split(" ")
     .map((n) => n[0])
-    .join("");
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
 function statusClass(status) {
   switch (status) {
@@ -63,39 +26,103 @@ function statusClass(status) {
 }
 
 function ApplicantsPage() {
+  const navigate = useNavigate();
+  const [applicants, setApplicants] = useState([]);
+  const [error, setError] = useState("");
+  const [updating, setUpdating] = useState(null);
+
+  const handleUnauthorized = useCallback((err) => {
+    if (String(err.message).includes("token") || String(err.message).includes("401")) {
+      logout();
+      navigate("/login", { replace: true });
+      return true;
+    }
+    return false;
+  }, [navigate]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api("/applications", { token: getToken() });
+        setApplicants(data);
+      } catch (err) {
+        if (!handleUnauthorized(err)) setError(err.message);
+      }
+    })();
+  }, [handleUnauthorized]);
+
+  const changeStatus = async (id, status) => {
+    setUpdating(id);
+    setError("");
+    try {
+      await api(`/applications/${id}/status`, {
+        method: "PATCH",
+        body: { status },
+        token: getToken(),
+      });
+      setApplicants((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status } : a)),
+      );
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   return (
     <div className="page">
       <h1 className="page-title">Applicants</h1>
+      {error && <p className="form-error">{error}</p>}
       <div className="card table-card">
-        <table className="applicants-table">
-          <thead>
-            <tr>
-              <th>Applicant</th>
-              <th>Applied For</th>
-              <th>Applied On</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {applicants.map((a) => (
-              <tr key={a.id}>
-                <td>
-                  <div className="applicant-cell">
-                    <div className="avatar-mini">{initials(a.name)}</div>
-                    <strong>{a.name}</strong>
-                  </div>
-                </td>
-                <td>{a.role}</td>
-                <td>{a.applied}</td>
-                <td>
-                  <span className={`status ${statusClass(a.status)}`}>
-                    {a.status}
-                  </span>
-                </td>
+        {applicants.length === 0 ? (
+          <p>No applications yet.</p>
+        ) : (
+          <table className="applicants-table">
+            <thead>
+              <tr>
+                <th>Applicant</th>
+                <th>Applied For</th>
+                <th>Applied On</th>
+                <th>Status</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {applicants.map((a) => (
+                <tr key={a.id}>
+                  <td>
+                    <div className="applicant-cell">
+                      <div className="avatar-mini">{initials(a.applicant_name)}</div>
+                      <strong>{a.applicant_name}</strong>
+                    </div>
+                  </td>
+                  <td>{a.role_title}</td>
+                  <td>{a.applied_at}</td>
+                  <td>
+                    <span className={`status ${statusClass(a.status)}`}>
+                      {a.status}
+                    </span>
+                  </td>
+                  <td>
+                    <select
+                      className="status-select"
+                      value={a.status}
+                      disabled={updating === a.id}
+                      onChange={(e) => changeStatus(a.id, e.target.value)}
+                    >
+                      {STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

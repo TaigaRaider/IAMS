@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
-import db from "../db.js";
+import { db } from "../db.js";
+import { users } from "../db/schema.js";
 
 const [username, password, fullName] = process.argv.slice(2);
 if (!username || !password) {
@@ -11,15 +12,19 @@ const password_hash = bcrypt.hashSync(password, 10);
 const email = `${username}@iams.local`;
 
 try {
-  const result = db
-    .prepare(
-      "INSERT INTO users (full_name, email, username, password_hash, user_role) VALUES (?, ?, ?, ?, 'admin')"
-    )
-    .run(fullName ?? "Admin", email, username, password_hash);
-  console.log(`Admin '${username}' created with id ${result.lastInsertRowid}`);
+  const result = await db
+    .insert(users)
+    .values({ full_name: fullName ?? "Admin", email, username, password_hash, user_role: "admin" })
+    .run();
+  console.log(`Admin '${username}' created with id ${Number(result.lastInsertRowid)}`);
 } catch (err) {
-  if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
-    console.error(`Username or email already exists`);
+  const cause = err?.cause ?? err;
+  if (
+    cause?.code === "SQLITE_CONSTRAINT_UNIQUE" ||
+    cause?.code === "SQLITE_CONSTRAINT" ||
+    /UNIQUE constraint failed/i.test(cause?.message ?? "")
+  ) {
+    console.error("Username or email already exists");
     process.exit(1);
   }
   throw err;

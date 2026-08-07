@@ -1,20 +1,29 @@
 import { Router } from "express";
-import db from "../db.js";
+import { eq, asc } from "drizzle-orm";
+import { db } from "../db.js";
+import { interviews, applications, users, roles } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
 
 const interviewRouter = Router();
 
-interviewRouter.get("/", verifyAuth, (req, res, next) => {
+const interviewSelect = {
+  id: interviews.id,
+  application_id: interviews.application_id,
+  scheduled_at: interviews.scheduled_at,
+  status: interviews.status,
+  applicant_name: users.full_name,
+  role_title: roles.title,
+};
+
+interviewRouter.get("/", verifyAuth, async (req, res, next) => {
   try {
-    const rows = db
-      .prepare(
-        `SELECT i.*, u.full_name AS applicant_name, r.title AS role_title
-         FROM interviews i
-         JOIN applications a ON a.id = i.application_id
-         JOIN users u ON u.id = a.applicant_id
-         JOIN roles r ON r.id = a.role_id
-         ORDER BY i.scheduled_at`
-      )
+    const rows = await db
+      .select(interviewSelect)
+      .from(interviews)
+      .leftJoin(applications, eq(applications.id, interviews.application_id))
+      .leftJoin(users, eq(users.id, applications.applicant_id))
+      .leftJoin(roles, eq(roles.id, applications.role_id))
+      .orderBy(asc(interviews.scheduled_at))
       .all();
     res.json({ data: rows });
   } catch (err) {
@@ -22,24 +31,29 @@ interviewRouter.get("/", verifyAuth, (req, res, next) => {
   }
 });
 
-interviewRouter.post("/", verifyAuth, requireAdmin, (req, res, next) => {
+interviewRouter.post("/", verifyAuth, requireAdmin, async (req, res, next) => {
   const { application_id, scheduled_at } = req.body ?? {};
   if (!application_id || !scheduled_at) {
     return res.status(400).json({ error: "application_id and scheduled_at are required" });
   }
   try {
-    const application = db
-      .prepare("SELECT id FROM applications WHERE id = ?")
-      .get(application_id);
+    const application = await db
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.id, Number(application_id)))
+      .get();
     if (!application) {
       return res.status(404).json({ error: "Application not found" });
     }
-    const result = db
-      .prepare(
-        "INSERT INTO interviews (application_id, scheduled_at, status) VALUES (?, ?, 'Pending')"
-      )
-      .run(application_id, scheduled_at);
-    res.status(201).json({ data: { id: result.lastInsertRowid } });
+    const result = await db
+      .insert(interviews)
+      .values({
+        application_id: Number(application_id),
+        scheduled_at,
+        status: "Pending",
+      })
+      .run();
+    res.status(201).json({ data: { id: Number(result.lastInsertRowid) } });
   } catch (err) {
     next(err);
   }

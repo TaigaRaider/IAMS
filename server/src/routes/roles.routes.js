@@ -1,45 +1,48 @@
 import { Router } from "express";
-import db from "../db.js";
+import { eq, desc } from "drizzle-orm";
+import { db } from "../db.js";
+import { roles } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
 
 const roleRouter = Router();
 
-roleRouter.get("/", (req, res, next) => {
+roleRouter.get("/", async (req, res, next) => {
   try {
-    const roles = db.prepare("SELECT * FROM roles ORDER BY created_at DESC").all();
-    res.json({ data: roles });
+    const data = await db.select().from(roles).orderBy(desc(roles.created_at)).all();
+    res.json({ data });
   } catch (err) {
     next(err);
   }
 });
 
-roleRouter.post("/", verifyAuth, requireAdmin, (req, res, next) => {
+roleRouter.post("/", verifyAuth, requireAdmin, async (req, res, next) => {
   const { title, department, description } = req.body ?? {};
   if (!title || !department) {
     return res.status(400).json({ error: "Title and department are required" });
   }
   try {
-    const result = db
-      .prepare(
-        "INSERT INTO roles (title, department, status, description) VALUES (?, ?, 'open', ?)"
-      )
-      .run(title, department, description ?? null);
-    res.status(201).json({ data: { id: result.lastInsertRowid } });
+    const result = await db
+      .insert(roles)
+      .values({ title, department, status: "open", description: description ?? null })
+      .run();
+    res.status(201).json({ data: { id: Number(result.lastInsertRowid) } });
   } catch (err) {
     next(err);
   }
 });
 
-roleRouter.patch("/:id", verifyAuth, requireAdmin, (req, res, next) => {
+roleRouter.patch("/:id", verifyAuth, requireAdmin, async (req, res, next) => {
   const { status } = req.body ?? {};
   if (status !== "open" && status !== "closed") {
     return res.status(400).json({ error: "Status must be 'open' or 'closed'" });
   }
   try {
-    const result = db
-      .prepare("UPDATE roles SET status = ? WHERE id = ?")
-      .run(status, req.params.id);
-    if (result.changes === 0) {
+    const result = await db
+      .update(roles)
+      .set({ status })
+      .where(eq(roles.id, Number(req.params.id)))
+      .run();
+    if (result.rowsAffected === 0) {
       return res.status(404).json({ error: "Role not found" });
     }
     res.json({ data: { id: Number(req.params.id) } });
