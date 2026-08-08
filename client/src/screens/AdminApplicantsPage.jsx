@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, getToken, logout } from "../api";
+import { api, logout } from "../api";
 
 const STATUSES = ["In Review", "Shortlisted", "Rejected", "Hired"];
 
@@ -43,7 +43,7 @@ function ApplicantsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await api("/applications", { token: getToken() });
+        const data = await api("/applications");
         setApplicants(data);
       } catch (err) {
         if (!handleUnauthorized(err)) setError(err.message);
@@ -58,7 +58,6 @@ function ApplicantsPage() {
       await api(`/applications/${id}/status`, {
         method: "PATCH",
         body: { status },
-        token: getToken(),
       });
       setApplicants((prev) =>
         prev.map((a) => (a.id === id ? { ...a, status } : a)),

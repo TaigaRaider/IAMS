@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, Clock, X, Briefcase, FileText, UserCheck } from "lucide-react";
-import { api, getToken, logout } from "../api";
+import { api, logout } from "../api";
 
 const STATUS_INFO = {
   "In Review": {
@@ -52,7 +52,7 @@ function ApplicantPage() {
     (async () => {
       try {
         const [apps, roleData] = await Promise.all([
-          api("/applications", { token: getToken() }),
+          api("/applications"),
           api("/roles"),
         ]);
         setApplications(apps);
@@ -74,9 +74,8 @@ function ApplicantPage() {
       await api("/applications", {
         method: "POST",
         body: { role_id: roleId },
-        token: getToken(),
       });
-      const apps = await api("/applications", { token: getToken() });
+      const apps = await api("/applications");
       setApplications(apps);
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
