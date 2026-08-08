@@ -47,6 +47,7 @@ Every endpoint returns JSON in one of two shapes:
 | 403  | Forbidden — valid token, but role lacks permission |
 | 404  | Not found — route or resource doesn't exist      |
 | 409  | Conflict — duplicate unique value (email, username, application) |
+| 429  | Too many requests — rate limit or account lockout active |
 | 500  | Server error — unexpected failure                |
 
 ### SQL rule
@@ -99,7 +100,8 @@ import authRoutes from "./routes/auth.routes.js";
 app.use("/api/auth", authRoutes);
 ```
 
-`index.js` keeps only the global middleware: `cors`, `express.json()`, the 404
+`index.js` keeps only the global middleware: `helmet`, `cookieParser`, `cors`,
+`express.json({ limit: "10kb" })`, the rate limiters (login/signup/api), the 404
 handler, and the error handler.
 
 ---
@@ -109,8 +111,7 @@ handler, and the error handler.
 ### What a JWT is
 
 A **JSON Web Token** is a compact, signed string the server issues after login.
-The client sends it back on every request to prove who it is. It has three parts,
-each base64-encoded and joined by dots:
+It has three parts, each base64-encoded and joined by dots:
 
 ```
 <header>.<payload>.<signature>
@@ -120,29 +121,40 @@ each base64-encoded and joined by dots:
 - **Payload** — claims (data about the user): `{"sub": 5, "role": "applicant", "iat": 1754550000, "exp": 1754636400}` (`sub` = user id, `iat` = issued at, `exp` = expiry)
 - **Signature** — hash of `header.payload` using a secret kept on the server. This is what makes the token unforgeable: if anyone edits the payload, the signature no longer matches and verification fails.
 
+Verification is pinned to `HS256` (no algorithm confusion), and the token must
+carry issuer `iams` and audience `iams-client` or it is rejected.
+
 ### The flow (logic)
 
 1. **Signup** — client sends `full_name`, `email`, `username`, `password`.
-   Server hashes the password with `bcryptjs` (never stores plaintext), inserts
-   the user, returns `201`.
+   The server validates each field (see §5 "Auth validation rules"),
+   hashes the password with `bcryptjs` at 12 rounds (never stores plaintext),
+   inserts the user, returns `201`.
 2. **Login** — client sends `username`, `password`. Server looks up the user,
    compares the password hash with `bcrypt.compare()`. On success it signs a
-   JWT (`jsonwebtoken.sign`) containing the user id and role, and returns it
-   together with the role and name:
+   JWT (`jsonwebtoken.sign`) containing the user id, role, issuer, and
+   audience — **and sets it as an `HttpOnly` cookie** (`iams_token`) rather
+   than returning it in the body:
    ```json
-   { "data": { "token": "eyJhbGciOiJIUzI1NiIs...", "role": "applicant", "full_name": "Anomalous" } }
+   { "data": { "role": "applicant", "full_name": "Anomalous" } }
    ```
+
+   Cookie flags: `HttpOnly` (JS cannot read it → XSS can't steal it),
+   `SameSite=Strict` (CSRF-resistant), `Secure` when `NODE_ENV=production`,
+   `Max-Age` from `JWT_EXPIRES_IN`.
 
    **Admin and applicant both log in through the same login page/endpoint.**
    There is no separate admin login — the server reads `user_role` from the
    `users` table, embeds it in the token, and returns it in the response. The
    client uses `role` from the response to redirect: `admin` → admin dashboard,
    `applicant` → applicant dashboard.
-3. **Every authenticated request** — client sends
-   `Authorization: Bearer <token>`. The server runs the token through
-   `jsonwebtoken.verify()` with the same secret; if valid, the payload
-   (user id + role) is attached to the request and the handler proceeds. If
-   missing, expired, or tampered with → `401`.
+3. **Every authenticated request** — the browser automatically attaches the
+   cookie (fetch is called with `credentials: "include"`). The server extracts
+   it and runs it through `jsonwebtoken.verify()` with the same secret; if
+   valid, the payload (user id + role) is attached to the request and the
+   handler proceeds. If missing, expired, or tampered with → `401`.
+4. **Logout** — `POST /api/auth/logout` clears the cookie server-side. The
+   client also drops its `localStorage` session copy.
 
 ### Why JWT
 
@@ -156,13 +168,23 @@ sees all).
 ```js
 import jwt from "jsonwebtoken";
 
+const COOKIE_NAME = "iams_token";
+const TOKEN_VERIFY_OPTIONS = {
+  algorithms: ["HS256"],
+  issuer: "iams",
+  audience: "iams-client",
+};
+
 export function verifyAuth(req, res, next) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) {
+  // Cookie first, Bearer header kept for API/script clients
+  const token = req.cookies?.[COOKIE_NAME]
+    ?? req.headers.authorization?.startsWith("Bearer ")
+    && req.headers.authorization.slice(7);
+  if (!token) {
     return res.status(401).json({ error: "Missing auth token" });
   }
   try {
-    req.user = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    req.user = jwt.verify(token, process.env.JWT_SECRET, TOKEN_VERIFY_OPTIONS);
     next();
   } catch {
     res.status(401).json({ error: "Invalid or expired token" });
@@ -183,20 +205,42 @@ export function requireAdmin(req, res, next) {
 router.post("/", verifyAuth, requireAdmin, (req, res) => { /* ... */ });
 ```
 
-The JWT secret lives in `server/.env` (`JWT_SECRET`), never in code.
+The JWT secret lives in `server/.env` (`JWT_SECRET`), never in code, and the
+server refuses to start with a secret shorter than 32 characters.
+
+### Account lockout
+
+After `5` failed login attempts for one username, the account is locked for
+`15` minutes — further attempts get `429` `"Account temporarily locked"` even
+with the correct password. The counter resets on a successful login. (In-memory
+`Map` per server instance — a restart clears it.)
+
+### Rate limiting
+
+`express-rate-limit` guards every API route (in `server/src/index.js`):
+
+| Limiter      | Scope             | Limit        | Window |
+| ------------ | ----------------- | ------------ | ------ |
+| `apiLimiter` | all `/api/*`      | 600 requests | 15 min |
+| `loginLimiter` | `/api/auth/login` | 10 attempts  | 15 min |
+| `signupLimiter` | `/api/auth/signup` | 5 accounts  | 1 hour |
+
+Exceeded requests get `429` `"Too many requests..."`. Responses carry
+draft-8 rate-limit headers (`ratelimit`, `ratelimit-policy`).
 
 ---
 
 ## 4. Endpoint reference
 
-> Auth column: **Public** = no token required, **Token** = requires
-> `Authorization: Bearer <token>`.
+> Auth column: **Public** = no token required, **Auth** = requires a valid
+> session cookie (`iams_token`, set by login) or `Authorization: Bearer <token>`.
 
 ### Auth
 
 #### `POST /api/auth/signup` — Public
 
-Create an applicant account.
+Create an applicant account. Validated server-side (see §5 rules); rate limited
+to 5 per hour per IP.
 
 **Body**
 
@@ -212,8 +256,9 @@ Create an applicant account.
 **Responses**
 
 - `201` — `{ "data": { "id": 1 } }`
-- `400` — missing/invalid fields
+- `400` — missing/invalid fields (bad email, bad username, weak password)
 - `409` — email or username already exists
+- `429` — signup rate limit (5 accounts/hour) or API rate limit exceeded
 
 **SQL**
 
@@ -224,9 +269,9 @@ VALUES (?, ?, ?, ?, 'applicant');
 
 #### `POST /api/auth/login` — Public
 
-Verify credentials and return a JWT. Used by **both applicants and admins** —
-the same login page posts here; the response `role` tells the client where to
-redirect.
+Verify credentials, set the `iams_token` session cookie, and return the user's
+role. Used by **both applicants and admins** — the same login page posts here;
+the response `role` tells the client where to redirect.
 
 **Body**
 
@@ -239,9 +284,13 @@ redirect.
 
 **Responses**
 
-- `200` — `{ "data": { "token": "eyJ...", "role": "applicant", "full_name": "Anomalous" } }` (`role` is `admin` for admin accounts)
+- `200` — `{ "data": { "role": "applicant", "full_name": "Anomalous" } }`
+  plus `Set-Cookie: iams_token=<jwt>; HttpOnly; SameSite=Strict` (role is
+  `admin` for admin accounts). No token in the body.
 - `400` — missing username/password
 - `401` — invalid credentials
+- `429` — account temporarily locked (5 failed attempts, 15 min), login rate
+  limit (10 per 15 min), or API rate limit exceeded
 
 **SQL**
 
@@ -250,6 +299,15 @@ SELECT * FROM users WHERE username = ?;
 ```
 
 Password checked with `bcrypt.compare(password, user.password_hash)`.
+
+#### `POST /api/auth/logout` — Public
+
+Clear the session cookie.
+
+**Responses**
+
+- `200` — `{ "data": { "ok": true } }` plus `Set-Cookie: iams_token=; ...`
+  (cookie removed)
 
 ---
 
@@ -563,14 +621,28 @@ router.post("/", (req, res) => {
 });
 ```
 
+### Auth validation rules
+
+| Field      | Rule                                                        |
+| ---------- | ----------------------------------------------------------- |
+| `username` | 3–30 chars, `[a-zA-Z0-9_]` only                              |
+| `email`    | standard email format                                        |
+| `password` | ≥ 8 chars, must contain at least one letter and one number   |
+| `full_name`| ≤ 100 chars                                                  |
+
+Violations return `400`. The signup route trims inputs before validating.
+
 ### Dependencies to add
 
 ```
-npm install bcryptjs jsonwebtoken
+npm install bcryptjs jsonwebtoken helmet express-rate-limit cookie-parser
 ```
 
 - `bcryptjs` — password hashing (pure JS, no native build step)
 - `jsonwebtoken` — sign and verify JWTs
+- `helmet` — security headers (HSTS, `X-Frame-Options`, etc.)
+- `express-rate-limit` — per-IP rate limiting + JSON `429` handlers
+- `cookie-parser` — reads the `iams_token` session cookie
 
 ### Creating admin accounts
 
@@ -584,5 +656,7 @@ node src/scripts/create-admin.js <username> <password> [full name]
 ### `server/.env` additions
 
 ```
-JWT_SECRET=<long random string>
+JWT_SECRET=<long random string, at least 32 chars>
+JWT_EXPIRES_IN=1h            # e.g. 30m, 8h, 2d
+NODE_ENV=development         # production → Secure cookies + HSTS
 ```

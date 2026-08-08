@@ -12,7 +12,7 @@ import {
   BadgeCheck,
   LogOut,
 } from "lucide-react";
-import { api, getToken, logout } from "../api";
+import { api, logout } from "../api";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 
 function Overview() {
@@ -25,8 +25,8 @@ function Overview() {
     (async () => {
       try {
         const [statData, appData] = await Promise.all([
-          api("/dashboard/stats", { token: getToken() }),
-          api("/applications", { token: getToken() }),
+          api("/dashboard/stats"),
+          api("/applications"),
         ]);
         setStats(statData);
         setApplications(appData);
@@ -169,7 +169,7 @@ function OffersPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await api("/offers", { token: getToken() });
+        const data = await api("/offers");
         setOffers(data);
       } catch (err) {
         if (String(err.message).includes("token") || String(err.message).includes("401")) {
@@ -256,7 +256,6 @@ function AddRolePage() {
       await api("/roles", {
         method: "POST",
         body: { title, department, description: description || null },
-        token: getToken(),
       });
       setSuccess("Role created successfully.");
       setTitle("");
@@ -339,8 +338,8 @@ function AdminDashboard() {
     if (window.innerWidth <= 768) setCollapsed(true);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login", { replace: true });
   };
 

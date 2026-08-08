@@ -12,8 +12,8 @@ function ApplicantDashboard() {
     if (window.innerWidth <= 768) setCollapsed(true);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login", { replace: true });
   };
 

@@ -14,7 +14,7 @@ Hands-on guide for wiring the React client pages to the IAMS API. Pairs with
 | Client          | `npm run dev` inside `client/` (Vite dev server) |
 | CORS origin     | Set via `ORIGIN` in `server/.env` — must match the Vite dev origin |
 | Admin account   | `admin` / `admin123` (created via `node src/scripts/create-admin.js`) |
-| Auth method     | `Authorization: Bearer <token>` header (token from login) |
+| Auth method     | `iams_token` session cookie (`HttpOnly`, `SameSite=Strict`) set by login; fetch uses `credentials: "include"` |
 
 Both servers must be running for the pages to talk to the API.
 
@@ -22,18 +22,20 @@ Both servers must be running for the pages to talk to the API.
 
 ## 2. Shared fetch helper — `client/src/api.js`
 
-Create this file so every page uses the same request logic.
+One module so every page uses the same request logic. The JWT lives in an
+`HttpOnly` cookie, so the client never reads or sends it — fetch just sends
+`credentials: "include"` and the browser attaches the cookie automatically.
 
 ```js
 const BASE = "http://localhost:8580/api";
 
-export async function api(path, { method = "GET", body, token } = {}) {
+export async function api(path, { method = "GET", body } = {}) {
   const headers = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(BASE + path, {
     method,
     headers,
+    credentials: "include",
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -44,7 +46,7 @@ export async function api(path, { method = "GET", body, token } = {}) {
   return json.data;
 }
 
-// Session helpers (localStorage)
+// Session helpers (localStorage — metadata only, NO token)
 export const saveSession = (data) =>
   localStorage.setItem("iams_session", JSON.stringify(data));
 
@@ -56,16 +58,26 @@ export const getSession = () => {
   }
 };
 
-export const getToken = () => getSession()?.token ?? null;
-
-export const logout = () => localStorage.removeItem("iams_session");
+// Server-side logout (clears the cookie) then drops the local copy.
+// Call with await from any logout handler.
+export const logout = async () => {
+  try {
+    await api("/auth/logout", { method: "POST" });
+  } catch {
+    // ignore — local cleanup should always run
+  }
+  localStorage.removeItem("iams_session");
+};
 ```
 
 Notes:
 
 - `api()` returns the `{ data }` part of the response and throws on errors with
   the server's message — so `try/catch` around every call.
-- Session is one object: `{ token, role, full_name }`.
+- Session is one object: `{ role, full_name }` — the token itself never reaches
+  JS, so it can't be read via XSS.
+- There is **no `getToken`** anymore — do not try to attach `Authorization`
+  headers; the cookie does the work.
 
 ---
 
@@ -95,7 +107,7 @@ export const LoginForm = () => {
         method: "POST",
         body: { username, password },
       });
-      saveSession(data); // { token, role, full_name }
+      saveSession(data); // { role, full_name } — token stays in the cookie
       // Admin and applicant both log in here — role drives the redirect:
       navigate(data.role === "admin" ? "/dashboard" : "/applicant", { replace: true });
     } catch (err) {
@@ -229,10 +241,10 @@ export const SignUpForm = () => {
 
 ## 5. Admin pages
 
-Both fetches need the admin token:
+No token is passed — the session cookie authenticates every fetch:
 
 ```js
-import { api, getToken, logout } from "../api";
+import { api, logout } from "../api";
 ```
 
 ### `client/src/screens/AdminDashboard.jsx`
@@ -242,7 +254,7 @@ Fetch the stats on mount and fill the cards:
 ```jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, getToken, logout } from "../api";
+import { api, logout } from "../api";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -252,7 +264,7 @@ function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await api("/dashboard/stats", { token: getToken() });
+        const data = await api("/dashboard/stats");
         setStats(data);
       } catch (err) {
         if (err.message.includes("token") || err.message.includes("401")) {
@@ -294,7 +306,7 @@ Replace the hardcoded `applicants` array with a fetch of `GET /api/applications`
 useEffect(() => {
   (async () => {
     try {
-      const data = await api("/applications", { token: getToken() });
+      const data = await api("/applications");
       setApplicants(data);
     } catch (err) {
       // 401 → logout + navigate("/login")
@@ -325,7 +337,7 @@ The applicant page shows the logged-in user's own applications.
 useEffect(() => {
   (async () => {
     try {
-      const data = await api("/applications", { token: getToken() });
+      const data = await api("/applications");
       // The server only returns THIS user's applications
       setApplications(data);
     } catch (err) {
@@ -336,9 +348,9 @@ useEffect(() => {
 ```
 
 - "My Application" status badge ← `applications[0].status` (their latest application)
-- Browse roles: `GET /api/roles` (public, no token needed)
-- Apply: `POST /api/applications` with `{ role_id }` and the user token —
-  a second apply to the same role throws `409 "Already applied to this role"`.
+- Browse roles: `GET /api/roles` (public, no auth needed)
+- Apply: `POST /api/applications` with `{ role_id }` — a second apply to the
+  same role throws `409 "Already applied to this role"`.
 
 ---
 
@@ -364,15 +376,17 @@ If the applicant dashboard shell (header/nav) is meant to wrap it, build it in
    `server/` running — `fetch` fails with `ECONNREFUSED` if the API is down.
 2. **CORS mismatch** — if `ORIGIN` in `server/.env` doesn't match the Vite dev
    origin, requests fail in the browser. Check the Vite port and the `.env` value.
-3. **Token expired/invalid** — any protected call returns `401`. The pattern in
+3. **Session expired/invalid** — any protected call returns `401`. The pattern in
    section 5 handles it: `logout()` + redirect to `/login`.
 4. **Await the response before navigating** — forms must `await api(...)` and
    only then `navigate(...)`, otherwise users land on the page before the server
    even replied.
 5. **Controlled inputs** — give every field `value` + `onChange`, or the server
    receives `undefined`/empty strings and returns `400`.
-6. **Debug first** — before touching the page, verify the endpoint with curl:
+6. **Debug first** — before touching the page, verify the endpoint with curl
+   (save the cookie to a jar so subsequent calls authenticate):
    ```bash
-   curl -X POST http://localhost:8580/api/auth/login -H "Content-Type: application/json" -d "{\"username\":\"admin\",\"password\":\"admin123\"}"
+   curl -c jar.txt -X POST http://localhost:8580/api/auth/login -H "Content-Type: application/json" -d "{\"username\":\"admin\",\"password\":\"admin123\"}"
+   curl -b jar.txt http://localhost:8580/api/dashboard/stats
    ```
-   If curl works and the page doesn't, it's a client bug (CORS, headers, token).
+   If curl works and the page doesn't, it's a client bug (CORS, credentials flag).
