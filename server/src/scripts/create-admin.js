@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { db } from "../db.js";
 import { users } from "../db/schema.js";
+import { compare } from "../utils/compare.js";
 
 const [username, password, fullName] = process.argv.slice(2);
 if (!username || !password) {
@@ -20,8 +21,8 @@ try {
 } catch (err) {
   const cause = err?.cause ?? err;
   if (
-    cause?.code === "SQLITE_CONSTRAINT_UNIQUE" ||
-    cause?.code === "SQLITE_CONSTRAINT" ||
+    compare(cause?.code, "SQLITE_CONSTRAINT_UNIQUE") ||
+    compare(cause?.code, "SQLITE_CONSTRAINT") ||
     /UNIQUE constraint failed/i.test(cause?.message ?? "")
   ) {
     console.error("Username or email already exists");

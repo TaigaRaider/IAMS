@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { compare } from "../utils/compare.js";
 
 export const COOKIE_NAME = "iams_token";
 export const TOKEN_ISSUER = "iams";
@@ -33,7 +34,7 @@ export function verifyAuth(req, res, next) {
 }
 
 export function requireAdmin(req, res, next) {
-  if (req.user?.role !== "admin") {
+  if (!compare(req.user?.role, "admin")) {
     return res.status(403).json({ error: "Admin access required" });
   }
   next();

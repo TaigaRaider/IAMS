@@ -22,6 +22,7 @@ import {
   Hourglass,
 } from "lucide-react";
 import { api, logout, getSession } from "../api";
+import { compare } from "../utils/compare";
 
 const ONBOARDING_STEPS = [
   { label: "Submit required documents", done: true },
@@ -113,7 +114,7 @@ function InternOverview() {
     }
   };
 
-  const hired = applications.find((a) => a.status === "Hired");
+  const hired = applications.find((a) => compare(a.status, "Hired"));
   const offer = hired
     ? offers.find((o) => o.application_id === hired.id) ?? null
     : null;
@@ -253,7 +254,7 @@ function InternOverview() {
           <div className="card-head">
             <h2>My Tasks</h2>
             <span className="view-all">
-              {tasks.filter((t) => t.status === "done").length}/{tasks.length} done
+              {tasks.filter((t) => compare(t.status, "done")).length}/{tasks.length} done
             </span>
           </div>
           {tasks.length === 0 ? (
@@ -261,8 +262,8 @@ function InternOverview() {
           ) : (
             <ul className="checklist">
               {tasks.map((task) => (
-                <li key={task.id} className={task.status === "done" ? "done" : ""}>
-                  {task.status === "done" ? (
+                <li key={task.id} className={compare(task.status, "done") ? "done" : ""}>
+                  {compare(task.status, "done") ? (
                     <CheckCircle2 className="check-icon done" size={20} />
                   ) : (
                     <Circle className="check-icon" size={20} />
@@ -280,14 +281,14 @@ function InternOverview() {
                       onClick={() =>
                         updateTaskStatus(
                           task,
-                          task.status === "pending" ? "in_progress" : "done",
+                          compare(task.status, "pending") ? "in_progress" : "done",
                         )
                       }
                     >
-                      {task.status === "pending" ? "Start" : "Mark done"}
+                      {compare(task.status, "pending") ? "Start" : "Mark done"}
                     </button>
                   )}
-                  {task.status === "done" && (
+                  {compare(task.status, "done") && (
                     <button
                       className="task-btn"
                       onClick={() => updateTaskStatus(task, "in_progress")}

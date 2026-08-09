@@ -11,6 +11,7 @@ import {
   TOKEN_AUDIENCE,
   TOKEN_ALGORITHM,
 } from "../middleware/auth.middleware.js";
+import { compare } from "../utils/compare.js";
 
 const authRouter = Router();
 
@@ -27,8 +28,8 @@ const failedAttempts = new Map();
 function isUniqueViolation(err) {
   const cause = err?.cause ?? err;
   return (
-    cause?.code === "SQLITE_CONSTRAINT_UNIQUE" ||
-    cause?.code === "SQLITE_CONSTRAINT" ||
+    compare(cause?.code, "SQLITE_CONSTRAINT_UNIQUE") ||
+    compare(cause?.code, "SQLITE_CONSTRAINT") ||
     /UNIQUE constraint failed/i.test(cause?.message ?? "")
   );
 }
@@ -157,7 +158,7 @@ authRouter.post("/login", async (req, res, next) => {
     res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
+      secure: compare(process.env.NODE_ENV, "production"),
       maxAge: expiresInSeconds(expiresIn) * 1000,
     });
 
@@ -171,7 +172,7 @@ authRouter.post("/logout", (_req, res) => {
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    secure: compare(process.env.NODE_ENV, "production"),
   });
   res.json({ data: { ok: true } });
 });
@@ -198,7 +199,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
     }
 
     const freshRole = user.user_role;
-    if (freshRole === "applicant") {
+    if (compare(freshRole, "applicant")) {
       const hired = await db
         .select({ id: applications.id })
         .from(applications)

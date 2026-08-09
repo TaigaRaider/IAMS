@@ -3,6 +3,7 @@ import { eq, desc } from "drizzle-orm";
 import { db } from "../db.js";
 import { roles } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
+import { compare } from "../utils/compare.js";
 
 const roleRouter = Router();
 
@@ -33,7 +34,7 @@ roleRouter.post("/", verifyAuth, requireAdmin, async (req, res, next) => {
 
 roleRouter.patch("/:id", verifyAuth, requireAdmin, async (req, res, next) => {
   const { status } = req.body ?? {};
-  if (status !== "open" && status !== "closed") {
+  if (!compare(status, "open") && !compare(status, "closed")) {
     return res.status(400).json({ error: "Status must be 'open' or 'closed'" });
   }
   try {
@@ -42,7 +43,7 @@ roleRouter.patch("/:id", verifyAuth, requireAdmin, async (req, res, next) => {
       .set({ status })
       .where(eq(roles.id, Number(req.params.id)))
       .run();
-    if (result.rowsAffected === 0) {
+    if (compare(result.rowsAffected, 0)) {
       return res.status(404).json({ error: "Role not found" });
     }
     res.json({ data: { id: Number(req.params.id) } });

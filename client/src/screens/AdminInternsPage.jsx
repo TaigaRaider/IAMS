@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, ShieldCheck } from "lucide-react";
 import { api, logout } from "../api";
+import { compare } from "../utils/compare";
 
 const initials = (name) =>
   (name ?? "?")
@@ -191,9 +192,9 @@ function AdminInternsPage() {
                     <td>
                       <span
                         className={`status ${
-                          intern.offer_status === "Accepted"
+                          compare(intern.offer_status, "Accepted")
                             ? "accepted"
-                            : intern.offer_status === "Declined"
+                            : compare(intern.offer_status, "Declined")
                               ? "rejected"
                               : "pending"
                         }`}

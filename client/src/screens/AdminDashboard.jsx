@@ -14,6 +14,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { api, logout } from "../api";
+import { compare } from "../utils/compare";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 import AdminInternsPage from "./AdminInternsPage.jsx";
 
@@ -120,11 +121,11 @@ function Overview() {
                   </div>
                   <span
                     className={`status ${
-                      app.status === "Shortlisted"
+                      compare(app.status, "Shortlisted")
                         ? "shortlisted"
-                        : app.status === "Rejected"
+                        : compare(app.status, "Rejected")
                           ? "rejected"
-                          : app.status === "Hired"
+                          : compare(app.status, "Hired")
                             ? "accepted"
                             : "pending"
                     }`}
@@ -243,9 +244,9 @@ function OffersPage() {
                   <td>
                     <span
                       className={`status ${
-                        o.status === "Accepted"
+                        compare(o.status, "Accepted")
                           ? "accepted"
-                          : o.status === "Declined"
+                          : compare(o.status, "Declined")
                             ? "rejected"
                             : "pending"
                       }`}
