@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, Clock, X, Briefcase, FileText, UserCheck } from "lucide-react";
 import { api, logout } from "../api";
+import { compare } from "../utils/compare";
 
 const STATUS_INFO = {
   "In Review": {
@@ -126,7 +127,7 @@ function ApplicantPage() {
             {latest.status}
           </span>
         )}
-        {latest?.status === "Hired" && (
+        {compare(latest?.status, "Hired") && (
           <button
             className="apply-btn"
             onClick={() => navigate("/intern", { replace: true })}
@@ -142,10 +143,10 @@ function ApplicantPage() {
         <section className="card offer-card">
           <div className="card-head">
             <h2>Job Offer</h2>
-            {latestOffer.status === "Rejected" || latestOffer.status === "Accepted" ? (
+            {compare(latestOffer.status, "Rejected") || compare(latestOffer.status, "Accepted") ? (
               <span
                 className={`status ${
-                  latestOffer.status === "Accepted" ? "accepted" : "rejected"
+                  compare(latestOffer.status, "Accepted") ? "accepted" : "rejected"
                 }`}
               >
                 {latestOffer.status}
@@ -154,7 +155,7 @@ function ApplicantPage() {
               <span className="status pending">{latestOffer.status}</span>
             )}
           </div>
-          {latestOffer.status === "Extended" && (
+          {compare(latestOffer.status, "Extended") && (
             <>
               <p>
                 Congratulations! An offer has been extended for{" "}
@@ -170,7 +171,7 @@ function ApplicantPage() {
               </button>
             </>
           )}
-          {latestOffer.status === "Accepted" && (
+          {compare(latestOffer.status, "Accepted") && (
             <>
               <p>Offer accepted — welcome aboard!</p>
               <button
@@ -181,7 +182,7 @@ function ApplicantPage() {
               </button>
             </>
           )}
-          {latestOffer.status === "Declined" && (
+          {compare(latestOffer.status, "Declined") && (
             <p>This offer was declined.</p>
           )}
         </section>
@@ -216,7 +217,7 @@ function ApplicantPage() {
           <ul className="roles-list">
             {roles.length === 0 && <li>No roles available right now.</li>}
             {roles
-              .filter((role) => role.status === "open")
+              .filter((role) => compare(role.status, "open"))
               .map((role) => (
                 <li key={role.id} className="role-item">
                   <div className="event-icon">

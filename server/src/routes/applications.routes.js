@@ -3,6 +3,7 @@ import { eq, desc } from "drizzle-orm";
 import { db } from "../db.js";
 import { applications, users, roles } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
+import { compare } from "../utils/compare.js";
 
 const applicationRouter = Router();
 
@@ -26,7 +27,7 @@ applicationRouter.get("/", verifyAuth, async (req, res, next) => {
       .orderBy(desc(applications.applied_at));
 
     const rows =
-      req.user.role === "admin"
+      compare(req.user.role, "admin")
         ? await query.all()
         : await query.where(eq(applications.applicant_id, req.user.sub)).all();
 
@@ -58,8 +59,8 @@ applicationRouter.post("/", verifyAuth, async (req, res, next) => {
   } catch (err) {
     const cause = err?.cause ?? err;
     if (
-      cause?.code === "SQLITE_CONSTRAINT_UNIQUE" ||
-      cause?.code === "SQLITE_CONSTRAINT" ||
+      compare(cause?.code, "SQLITE_CONSTRAINT_UNIQUE") ||
+      compare(cause?.code, "SQLITE_CONSTRAINT") ||
       /UNIQUE constraint failed/i.test(cause?.message ?? "")
     ) {
       return res.status(409).json({ error: "Already applied to this role" });
@@ -88,7 +89,7 @@ applicationRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res
       .set({ status })
       .where(eq(applications.id, Number(req.params.id)))
       .run();
-    if (status === "Hired") {
+    if (compare(status, "Hired")) {
       await db
         .update(users)
         .set({ user_role: "intern" })

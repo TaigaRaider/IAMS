@@ -9,6 +9,7 @@ import {
   internTasks,
 } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
+import { compare } from "../utils/compare.js";
 
 const internRouter = Router();
 
@@ -72,7 +73,7 @@ internRouter.get("/interns", verifyAuth, requireAdmin, async (req, res, next) =>
 // GET /api/interns/tasks — admin: all tasks; intern: own tasks
 internRouter.get("/interns/tasks", verifyAuth, async (req, res, next) => {
   try {
-    const isAdmin = req.user.role === "admin";
+    const isAdmin = compare(req.user.role, "admin");
     const internId = isAdmin ? Number(req.query.intern_id) || null : req.user.sub;
     const query = db
       .select({
@@ -147,8 +148,8 @@ internRouter.patch("/interns/tasks/:id", verifyAuth, async (req, res, next) => {
     if (!existing) {
       return res.status(404).json({ error: "Task not found" });
     }
-    const isAdmin = req.user.role === "admin";
-    const isOwner = Number(existing.intern_id) === Number(req.user.sub);
+    const isAdmin = compare(req.user.role, "admin");
+    const isOwner = compare(Number(existing.intern_id), Number(req.user.sub));
     if (!isAdmin && !isOwner) {
       return res.status(403).json({ error: "Not your task" });
     }
@@ -163,7 +164,7 @@ internRouter.patch("/interns/tasks/:id", verifyAuth, async (req, res, next) => {
       })
       .where(eq(internTasks.id, Number(req.params.id)))
       .run();
-    if (result.rowsAffected === 0) {
+    if (compare(result.rowsAffected, 0)) {
       return res.status(404).json({ error: "Task not found" });
     }
     res.json({ data: { id: Number(req.params.id) } });
@@ -179,7 +180,7 @@ internRouter.delete("/interns/tasks/:id", verifyAuth, requireAdmin, async (req, 
       .delete(internTasks)
       .where(eq(internTasks.id, Number(req.params.id)))
       .run();
-    if (result.rowsAffected === 0) {
+    if (compare(result.rowsAffected, 0)) {
       return res.status(404).json({ error: "Task not found" });
     }
     res.json({ data: { id: Number(req.params.id) } });
@@ -195,7 +196,7 @@ internRouter.patch("/interns/users/:id/role", verifyAuth, requireAdmin, async (r
     return res.status(400).json({ error: "Invalid role" });
   }
   const targetId = Number(req.params.id);
-  if (targetId === Number(req.user.sub)) {
+  if (compare(targetId, Number(req.user.sub))) {
     return res.status(400).json({ error: "You cannot change your own role" });
   }
   try {
@@ -204,7 +205,7 @@ internRouter.patch("/interns/users/:id/role", verifyAuth, requireAdmin, async (r
       .set({ user_role: role })
       .where(eq(users.id, targetId))
       .run();
-    if (result.rowsAffected === 0) {
+    if (compare(result.rowsAffected, 0)) {
       return res.status(404).json({ error: "User not found" });
     }
     res.json({ data: { id: targetId, role } });

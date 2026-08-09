@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db.js";
 import { offers, applications, users } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
+import { compare } from "../utils/compare.js";
 
 const offerRouter = Router();
 
@@ -26,8 +27,8 @@ async function promoteToIntern(userId) {
 function isUniqueViolation(err) {
   const cause = err?.cause ?? err;
   return (
-    cause?.code === "SQLITE_CONSTRAINT_UNIQUE" ||
-    cause?.code === "SQLITE_CONSTRAINT" ||
+    compare(cause?.code, "SQLITE_CONSTRAINT_UNIQUE") ||
+    compare(cause?.code, "SQLITE_CONSTRAINT") ||
     /UNIQUE constraint failed/i.test(cause?.message ?? "")
   );
 }
@@ -40,7 +41,7 @@ offerRouter.get("/", verifyAuth, async (req, res, next) => {
       .leftJoin(applications, eq(applications.id, offers.application_id))
       .leftJoin(users, eq(users.id, applications.applicant_id));
     const rows =
-      req.user.role === "admin"
+      compare(req.user.role, "admin")
         ? await query.all()
         : await query
             .where(eq(applications.applicant_id, req.user.sub))
@@ -94,7 +95,7 @@ offerRouter.post("/:id/accept", verifyAuth, async (req, res, next) => {
     if (!existing) {
       return res.status(404).json({ error: "Offer not found" });
     }
-    if (Number(existing.applicant_id) !== Number(req.user.sub)) {
+    if (!compare(Number(existing.applicant_id), Number(req.user.sub))) {
       return res.status(403).json({ error: "This offer is not yours to accept" });
     }
     await db
@@ -134,7 +135,7 @@ offerRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res, next
       .set({ status })
       .where(eq(offers.id, existing.id))
       .run();
-    if (status === "Accepted") {
+    if (compare(status, "Accepted")) {
       await promoteToIntern(existing.applicant_id);
     }
     res.json({ data: { id: existing.id, status } });

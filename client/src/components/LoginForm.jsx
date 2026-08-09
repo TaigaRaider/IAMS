@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { api, saveSession, getSession } from "../api";
+import { compare } from "../utils/compare";
 
 export const LoginForm = () => {
   const navigate = useNavigate();
@@ -13,9 +14,9 @@ export const LoginForm = () => {
     const session = getSession();
     if (session?.role) {
       navigate(
-        session.role === "admin"
+        compare(session.role, "admin")
           ? "/dashboard"
-          : session.role === "intern"
+          : compare(session.role, "intern")
             ? "/intern"
             : "/applicant",
         { replace: true },
@@ -34,9 +35,9 @@ export const LoginForm = () => {
       });
       saveSession(data);
       navigate(
-        data.role === "admin"
+        compare(data.role, "admin")
           ? "/dashboard"
-          : data.role === "intern"
+          : compare(data.role, "intern")
             ? "/intern"
             : "/applicant",
         { replace: true },
