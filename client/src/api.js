@@ -1,7 +1,12 @@
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
+const SESSION_KEY = "iams_session";
 
 export async function api(path, { method = "GET", body } = {}) {
   const headers = { "Content-Type": "application/json" };
+  const token = getSession()?.token;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   const res = await fetch(BASE + path, {
     method,
@@ -17,14 +22,16 @@ export async function api(path, { method = "GET", body } = {}) {
   return json.data;
 }
 
-// Session helpers (localStorage) — holds { role, full_name }; the auth token
-// lives in an httpOnly cookie the browser sends automatically.
+// Session helpers (sessionStorage) — holds { role, full_name, token }.
+// Stored per-tab so two tabs can be signed in as different accounts; the
+// auth token is sent as an Authorization header (the httpOnly cookie remains
+// as a server-side fallback).
 export const saveSession = (data) =>
-  localStorage.setItem("iams_session", JSON.stringify(data));
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
 
 export const getSession = () => {
   try {
-    return JSON.parse(localStorage.getItem("iams_session"));
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY));
   } catch {
     return null;
   }
@@ -36,5 +43,5 @@ export const logout = async () => {
   } catch {
     // cookie may already be gone; still clear the local session
   }
-  localStorage.removeItem("iams_session");
+  sessionStorage.removeItem(SESSION_KEY);
 };

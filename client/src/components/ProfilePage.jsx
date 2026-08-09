@@ -42,7 +42,7 @@ function ProfilePage() {
     setError("");
     try {
       await api("/auth/account", { method: "DELETE" });
-      localStorage.removeItem("iams_session");
+      sessionStorage.removeItem("iams_session");
       navigate("/login", { replace: true });
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);

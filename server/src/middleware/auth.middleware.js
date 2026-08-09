@@ -13,15 +13,15 @@ export const TOKEN_VERIFY_OPTIONS = {
 };
 
 export function extractToken(req) {
+  const header = req.headers.authorization;
+  if (header?.startsWith("Bearer ")) {
+    return header.slice(7);
+  }
   return req.cookies?.[COOKIE_NAME] ?? null;
 }
 
 export function verifyAuth(req, res, next) {
   let token = extractToken(req);
-  const header = req.headers.authorization;
-  if (!token && header?.startsWith("Bearer ")) {
-    token = header.slice(7);
-  }
   if (!token) {
     return res.status(401).json({ error: "Missing auth token" });
   }
