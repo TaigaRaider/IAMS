@@ -168,7 +168,13 @@ authRouter.post("/login", async (req, res, next) => {
       maxAge: expiresInSeconds(expiresIn) * 1000,
     });
 
-    res.json({ data: { role: user.user_role, full_name: user.full_name } });
+    res.json({
+      data: {
+        role: user.user_role,
+        full_name: user.full_name,
+        token,
+      },
+    });
   } catch (err) {
     next(err);
   }
