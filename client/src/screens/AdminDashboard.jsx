@@ -12,9 +12,11 @@ import {
   BadgeCheck,
   LogOut,
   GraduationCap,
+  UserRound,
 } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
+import LoadingScreen from "../components/LoadingScreen.jsx";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 import AdminInternsPage from "./AdminInternsPage.jsx";
 
@@ -45,7 +47,7 @@ function Overview() {
   }, [navigate]);
 
   if (error) return <p className="form-error">{error}</p>;
-  if (!stats) return <p>Loading...</p>;
+  if (!stats) return <LoadingScreen text="Loading dashboard..." />;
 
   const recent = applications.slice(0, 4);
   const depts = stats.applicationsByDepartment;
@@ -459,6 +461,16 @@ function AdminDashboard() {
             >
               <Plus />
               <span>Add</span>
+            </NavLink>
+            <NavLink
+              to="/profile"
+              onClick={closeOnMobile}
+              className={({ isActive }) =>
+                `nav-item${isActive ? " active" : ""}`
+              }
+            >
+              <UserRound />
+              <span>Profile</span>
             </NavLink>
           </nav>
         </aside>

@@ -20,6 +20,7 @@ import {
   BookOpen,
   Gift,
   Hourglass,
+  UserRound,
 } from "lucide-react";
 import { api, logout, getSession } from "../api";
 import { compare } from "../utils/compare";
@@ -396,7 +397,7 @@ function InternDashboard() {
       <div className="layout">
         <aside className={collapsed ? "sidebar collapsed" : "sidebar"}>
           <nav>
-            <NavLink
+                        <NavLink
               to="/intern"
               end
               onClick={closeOnMobile}
@@ -406,6 +407,16 @@ function InternDashboard() {
             >
               <LayoutDashboard />
               <span>Overview</span>
+            </NavLink>
+            <NavLink
+              to="/profile"
+              onClick={closeOnMobile}
+              className={({ isActive }) =>
+                `nav-item${isActive ? " active" : ""}`
+              }
+            >
+              <UserRound />
+              <span>Profile</span>
             </NavLink>
           </nav>
         </aside>
