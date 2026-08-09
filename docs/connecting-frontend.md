@@ -9,14 +9,28 @@ Hands-on guide for wiring the React client pages to the IAMS API. Pairs with
 
 | Thing           | Value                                        |
 | --------------- | -------------------------------------------- |
-| API base URL    | `http://localhost:8580/api`                  |
+| API base URL    | `/api` (same-origin via the Vite proxy; override with `VITE_API_BASE` if served elsewhere) |
 | Server          | `npm run dev` inside `server/` (port from `.env`, currently 8580) |
-| Client          | `npm run dev` inside `client/` (Vite dev server) |
+| Client          | `npm run dev` inside `client/` (Vite dev server; `/api` is proxied to the server) |
 | CORS origin     | Set via `ORIGIN` in `server/.env` — must match the Vite dev origin |
 | Admin account   | `admin` / `admin123` (created via `node src/scripts/create-admin.js`) |
 | Auth method     | `iams_token` session cookie (`HttpOnly`, `SameSite=Strict`) set by login; fetch uses `credentials: "include"` |
 
 Both servers must be running for the pages to talk to the API.
+
+### Base URL / Vite proxy
+
+`client/src/api.js` defaults to a **relative** `/api` base:
+
+```js
+const BASE = import.meta.env.VITE_API_BASE ?? "/api";
+```
+
+The Vite dev server proxies `/api` → `http://localhost:8580` (see
+`client/vite.config.js`), so in development requests are **same-origin** — no
+CORS, and it works no matter which host/port you open the client from. If the
+built client is served from a different origin, set `VITE_API_BASE` to the API
+root before building, or serve `/api` behind the same server.
 
 ---
 

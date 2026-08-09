@@ -100,6 +100,14 @@ function ApplicantPage() {
             {latest.status}
           </span>
         )}
+        {latest?.status === "Hired" && (
+          <button
+            className="apply-btn"
+            onClick={() => navigate("/intern", { replace: true })}
+          >
+            Open intern dashboard
+          </button>
+        )}
       </div>
 
       {error && <p className="form-error">{error}</p>}

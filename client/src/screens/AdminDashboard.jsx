@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { NavLink, Link, Routes, Route, useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -11,9 +11,11 @@ import {
   CalendarClock,
   BadgeCheck,
   LogOut,
+  GraduationCap,
 } from "lucide-react";
 import { api, logout } from "../api";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
+import AdminInternsPage from "./AdminInternsPage.jsx";
 
 function Overview() {
   const navigate = useNavigate();
@@ -165,6 +167,16 @@ function OffersPage() {
   const navigate = useNavigate();
   const [offers, setOffers] = useState([]);
   const [error, setError] = useState("");
+  const [updating, setUpdating] = useState(null);
+
+  const handleUnauthorized = useCallback((err) => {
+    if (String(err.message).includes("token") || String(err.message).includes("401")) {
+      logout();
+      navigate("/login", { replace: true });
+      return true;
+    }
+    return false;
+  }, [navigate]);
 
   useEffect(() => {
     (async () => {
@@ -172,15 +184,28 @@ function OffersPage() {
         const data = await api("/offers");
         setOffers(data);
       } catch (err) {
-        if (String(err.message).includes("token") || String(err.message).includes("401")) {
-          logout();
-          navigate("/login", { replace: true });
-        } else {
-          setError(err.message);
-        }
+        if (!handleUnauthorized(err)) setError(err.message);
       }
     })();
-  }, [navigate]);
+  }, [handleUnauthorized]);
+
+  const changeStatus = async (id, status) => {
+    setUpdating(id);
+    setError("");
+    try {
+      await api(`/offers/${id}/status`, {
+        method: "PATCH",
+        body: { status },
+      });
+      setOffers((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, status } : o)),
+      );
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   return (
     <div className="page">
@@ -196,6 +221,7 @@ function OffersPage() {
                 <th>Applicant</th>
                 <th>Status</th>
                 <th>Extended On</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -228,6 +254,18 @@ function OffersPage() {
                     </span>
                   </td>
                   <td>{o.created_at}</td>
+                  <td>
+                    <select
+                      className="status-select"
+                      value={o.status}
+                      disabled={updating === o.id}
+                      onChange={(e) => changeStatus(o.id, e.target.value)}
+                    >
+                      <option value="Extended">Extended</option>
+                      <option value="Accepted">Accepted</option>
+                      <option value="Declined">Declined</option>
+                    </select>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -392,6 +430,16 @@ function AdminDashboard() {
               <span>Applicants</span>
             </NavLink>
             <NavLink
+              to="/dashboard/interns"
+              onClick={closeOnMobile}
+              className={({ isActive }) =>
+                `nav-item${isActive ? " active" : ""}`
+              }
+            >
+              <GraduationCap />
+              <span>Interns</span>
+            </NavLink>
+            <NavLink
               to="/dashboard/offers"
               onClick={closeOnMobile}
               className={({ isActive }) =>
@@ -417,6 +465,7 @@ function AdminDashboard() {
           <Routes>
             <Route index element={<Overview />} />
             <Route path="applicants" element={<AdminApplicantsPage />} />
+            <Route path="interns" element={<AdminInternsPage />} />
             <Route path="offers" element={<OffersPage />} />
             <Route path="add" element={<AddRolePage />} />
           </Routes>

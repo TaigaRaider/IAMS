@@ -21,7 +21,7 @@ import {
   Gift,
   Hourglass,
 } from "lucide-react";
-import { api, getToken, logout, getSession } from "../api";
+import { api, logout, getSession } from "../api";
 
 const ONBOARDING_STEPS = [
   { label: "Submit required documents", done: true },
@@ -54,6 +54,7 @@ function InternOverview() {
   const [applications, setApplications] = useState([]);
   const [offers, setOffers] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [error, setError] = useState("");
 
   const handleUnauthorized = useCallback(
@@ -75,8 +76,8 @@ function InternOverview() {
     (async () => {
       try {
         const [apps, offerData, roleData] = await Promise.all([
-          api("/applications", { token: getToken() }),
-          api("/offers", { token: getToken() }),
+          api("/applications"),
+          api("/offers"),
           api("/roles"),
         ]);
         setApplications(apps);
@@ -87,6 +88,30 @@ function InternOverview() {
       }
     })();
   }, [handleUnauthorized]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setTasks(await api("/interns/tasks"));
+      } catch (err) {
+        if (!handleUnauthorized(err)) setError(err.message);
+      }
+    })();
+  }, [handleUnauthorized]);
+
+  const updateTaskStatus = async (task, status) => {
+    try {
+      await api(`/interns/tasks/${task.id}`, {
+        method: "PATCH",
+        body: { status },
+      });
+      setTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, status } : t)),
+      );
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    }
+  };
 
   const hired = applications.find((a) => a.status === "Hired");
   const offer = hired
@@ -225,6 +250,58 @@ function InternOverview() {
         </section>
 
         <section className="card">
+          <div className="card-head">
+            <h2>My Tasks</h2>
+            <span className="view-all">
+              {tasks.filter((t) => t.status === "done").length}/{tasks.length} done
+            </span>
+          </div>
+          {tasks.length === 0 ? (
+            <p className="muted">No tasks assigned yet.</p>
+          ) : (
+            <ul className="checklist">
+              {tasks.map((task) => (
+                <li key={task.id} className={task.status === "done" ? "done" : ""}>
+                  {task.status === "done" ? (
+                    <CheckCircle2 className="check-icon done" size={20} />
+                  ) : (
+                    <Circle className="check-icon" size={20} />
+                  )}
+                  <div className="task-info">
+                    <strong>{task.title}</strong>
+                    {task.description && <span>{task.description}</span>}
+                    {task.due_date && (
+                      <span className="task-due">Due {formatDate(task.due_date)}</span>
+                    )}
+                  </div>
+                  {task.status !== "done" && (
+                    <button
+                      className="task-btn"
+                      onClick={() =>
+                        updateTaskStatus(
+                          task,
+                          task.status === "pending" ? "in_progress" : "done",
+                        )
+                      }
+                    >
+                      {task.status === "pending" ? "Start" : "Mark done"}
+                    </button>
+                  )}
+                  {task.status === "done" && (
+                    <button
+                      className="task-btn"
+                      onClick={() => updateTaskStatus(task, "in_progress")}
+                    >
+                      Reopen
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="card">
           <h2>Getting Started</h2>
           <ul className="resource-list">
             <li>
@@ -286,8 +363,8 @@ function InternDashboard() {
     if (window.innerWidth <= 768) setCollapsed(true);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login", { replace: true });
   };
 

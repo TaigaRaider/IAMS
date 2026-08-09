@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { api, saveSession } from "../api";
+import { useState, useEffect } from "react";
+import { api, saveSession, getSession } from "../api";
 
 export const LoginForm = () => {
   const navigate = useNavigate();
@@ -8,6 +8,20 @@ export const LoginForm = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const session = getSession();
+    if (session?.role) {
+      navigate(
+        session.role === "admin"
+          ? "/dashboard"
+          : session.role === "intern"
+            ? "/intern"
+            : "/applicant",
+        { replace: true },
+      );
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,9 +33,14 @@ export const LoginForm = () => {
         body: { username, password },
       });
       saveSession(data);
-      navigate(data.role === "admin" ? "/dashboard" : "/applicant", {
-        replace: true,
-      });
+      navigate(
+        data.role === "admin"
+          ? "/dashboard"
+          : data.role === "intern"
+            ? "/intern"
+            : "/applicant",
+        { replace: true },
+      );
     } catch (err) {
       setError(err.message);
     } finally {

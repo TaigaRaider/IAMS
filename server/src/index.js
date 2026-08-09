@@ -10,6 +10,7 @@ import { interviewRouter } from "./routes/interviews.routes.js";
 import { offerRouter } from "./routes/offers.routes.js";
 import { roleRouter } from "./routes/roles.routes.js";
 import { applicationRouter } from "./routes/applications.routes.js";
+import { internRouter } from "./routes/interns.routes.js";
 
 config();
 
@@ -69,6 +70,7 @@ app.use("/api/interviews", interviewRouter);
 app.use("/api/offers", offerRouter);
 app.use("/api/roles", roleRouter);
 app.use("/api/applications", applicationRouter);
+app.use("/api", internRouter);
 
 app.get("/", (req, res) => {
   res.send("This is BACKEND...HAHAHAHAHAHAHAH");
