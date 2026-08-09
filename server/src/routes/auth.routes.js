@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
 import { db } from "../db.js";
-import { users } from "../db/schema.js";
+import { users, applications } from "../db/schema.js";
+import { verifyAuth } from "../middleware/auth.middleware.js";
 import {
   COOKIE_NAME,
   TOKEN_ISSUER,
@@ -173,6 +174,51 @@ authRouter.post("/logout", (_req, res) => {
     secure: process.env.NODE_ENV === "production",
   });
   res.json({ data: { ok: true } });
+});
+
+// Current session: verifies the token, returns the freshest role from the DB,
+// and self-heals — an applicant whose application was marked "Hired" (or whose
+// offer was accepted) is migrated to the intern role automatically.
+authRouter.get("/me", verifyAuth, async (req, res, next) => {
+  try {
+    const userId = Number(req.user.sub);
+    const user = await db
+      .select({
+        id: users.id,
+        full_name: users.full_name,
+        user_role: users.user_role,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
+
+    if (!user) {
+      res.clearCookie(COOKIE_NAME);
+      return res.status(401).json({ error: "Account no longer exists" });
+    }
+
+    const freshRole = user.user_role;
+    if (freshRole === "applicant") {
+      const hired = await db
+        .select({ id: applications.id })
+        .from(applications)
+        .where(eq(applications.applicant_id, user.id))
+        .where(eq(applications.status, "Hired"))
+        .get();
+      if (hired) {
+        await db
+          .update(users)
+          .set({ user_role: "intern" })
+          .where(eq(users.id, user.id))
+          .run();
+        return res.json({ data: { role: "intern", full_name: user.full_name } });
+      }
+    }
+
+    res.json({ data: { role: freshRole, full_name: user.full_name } });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export { authRouter };

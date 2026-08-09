@@ -9,7 +9,9 @@ export const users = sqliteTable(
     email: text("email").notNull(),
     username: text("username").notNull(),
     password_hash: text("password_hash").notNull(),
-    user_role: text("user_role", { enum: ["admin", "applicant"] })
+    user_role: text("user_role", {
+      enum: ["admin", "applicant", "intern"],
+    })
       .notNull()
       .default("applicant"),
     created_at: text("created_at")
@@ -83,6 +85,27 @@ export const offers = sqliteTable(
     status: text("status", { enum: ["Extended", "Accepted", "Declined"] })
       .notNull()
       .default("Extended"),
+    created_at: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+);
+
+export const internTasks = sqliteTable(
+  "intern_tasks",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    intern_id: integer("intern_id")
+      .notNull()
+      .references(() => users.id),
+    title: text("title").notNull(),
+    description: text("description"),
+    status: text("status", {
+      enum: ["pending", "in_progress", "done"],
+    })
+      .notNull()
+      .default("pending"),
+    due_date: text("due_date"),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

@@ -75,13 +75,25 @@ applicationRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res
     return res.status(400).json({ error: "Invalid status" });
   }
   try {
-    const result = await db
+    const existing = await db
+      .select({ id: applications.id, applicant_id: applications.applicant_id })
+      .from(applications)
+      .where(eq(applications.id, Number(req.params.id)))
+      .get();
+    if (!existing) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+    await db
       .update(applications)
       .set({ status })
       .where(eq(applications.id, Number(req.params.id)))
       .run();
-    if (result.rowsAffected === 0) {
-      return res.status(404).json({ error: "Application not found" });
+    if (status === "Hired") {
+      await db
+        .update(users)
+        .set({ user_role: "intern" })
+        .where(eq(users.id, existing.applicant_id))
+        .run();
     }
     res.json({ data: { id: Number(req.params.id) } });
   } catch (err) {

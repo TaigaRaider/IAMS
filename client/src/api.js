@@ -1,4 +1,4 @@
-const BASE = "http://localhost:8580/api";
+const BASE = import.meta.env.VITE_API_BASE ?? "/api";
 
 export async function api(path, { method = "GET", body } = {}) {
   const headers = { "Content-Type": "application/json" };

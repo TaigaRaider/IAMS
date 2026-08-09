@@ -46,6 +46,9 @@ compromise of the hosting account itself, insider admin abuse.
 | Role checks on admin routes (`requireAdmin`) | `auth.middleware.js`         | Privilege escalation                  |
 | Parameterized queries (Drizzle)        | `server/src/db.js` + all routes    | SQL injection                         |
 | CORS locked to `ORIGIN`                | `server/src/index.js`              | Cross-origin read of the API          |
+| Client-side route guards (`RequireAuth`) | `client/src/components/RequireAuth.jsx` | Unauthenticated users and role mismatches never see a dashboard |
+| Live role re-validation (`GET /auth/me`) | `auth.routes.js`            | Stale/forged `localStorage` sessions  |
+| Server-side role promotion only       | `applications.routes.js`, `offers.routes.js` | Applicant → intern migration can't be spoofed from the client |
 
 ---
 
@@ -66,8 +69,25 @@ compromise of the hosting account itself, insider admin abuse.
 3. **Every request** — `verifyAuth` reads the cookie (falling back to a
    `Bearer` header for API/script clients), verifies with the pinned options,
    and attaches `req.user`. Admin-only routes chain `requireAdmin` after it.
-4. **Logout** — `POST /api/auth/logout` clears the cookie; the client also
+4. **Route guards** — `RequireAuth` in `client/src/components/RequireAuth.jsx`
+   verifies the session with `GET /api/auth/me` (fresh role straight from the
+   DB) before showing any dashboard, and redirects out of role-mismatched
+   URLs; server-side middleware stays the source of truth.
+5. **Logout** — `POST /api/auth/logout` clears the cookie; the client also
    clears its `localStorage` session copy.
+
+### Applicant → intern migration
+
+The `intern` role is granted **only server-side**, never from the client:
+- when an application is marked `Hired` (admin),
+- when an offer is accepted (`PATCH /api/offers/:id/status` by admin or
+  `POST /api/offers/:id/accept` by the applicant), or
+- self-healing in `GET /auth/me` for users whose application is already
+  `Hired`.
+
+`GET /auth/me` returns the freshest DB role, so a stale token or
+`localStorage` copy can't keep someone on the applicant page after being
+promoted, nor vice versa.
 
 ---
 

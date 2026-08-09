@@ -72,11 +72,12 @@ src/
   middleware/
     auth.middleware.js     verifyAuth, requireAdmin
   routes/
-    auth.routes.js          POST /api/auth/signup, POST /api/auth/login
+    auth.routes.js          POST /api/auth/signup, POST /api/auth/login, GET /api/auth/me, POST /api/auth/logout
     roles.routes.js         GET/POST /api/roles, PATCH /api/roles/:id
     applications.routes.js  GET/POST /api/applications, PATCH /api/applications/:id/status
     interviews.routes.js    GET/POST /api/interviews
-    offers.routes.js        GET/POST /api/offers
+    offers.routes.js        GET/POST /api/offers, POST /api/offers/:id/accept, PATCH /api/offers/:id/status
+    interns.routes.js       GET /api/interns, GET/POST/PATCH/DELETE /api/interns/tasks, PATCH /api/interns/users/:id/role
     dashboard.routes.js     GET /api/dashboard/stats
 ```
 
@@ -309,6 +310,18 @@ Clear the session cookie.
 - `200` — `{ "data": { "ok": true } }` plus `Set-Cookie: iams_token=; ...`
   (cookie removed)
 
+#### `GET /api/auth/me` — Token
+
+Return the **current** role and name straight from the DB (the JWT payload can
+lag behind a role change). Also self-heals: an applicant whose application is
+now `Hired` (or whose offer was accepted) is migrated to the `intern` role
+here, so the client redirects them to the intern dashboard automatically.
+
+**Responses**
+
+- `200` — `{ "data": { "role": "applicant|intern|admin", "full_name": "..." } }`
+- `401` — missing/expired token, or account deleted
+
 ---
 
 ### Roles (internship positions)
@@ -502,11 +515,12 @@ VALUES (?, ?, 'Pending');
 
 #### `GET /api/offers` — Token
 
-List offers.
+List offers. **Admins see all; applicants/interns see only their own** — the
+handler filters by `req.user.sub` for non-admins.
 
 **Responses**
 
-- `200` — `{ "data": [ { "id": 1, "application_id": 2, "status": "Extended", "created_at": "...", "applicant_name": "John Doe" } ] }`
+- `200` — `{ "data": [ { "id": 1, "application_id": 2, "status": "Extended", "created_at": "...", "applicant_id": 3, "applicant_name": "John Doe" } ] }`
 
 **SQL**
 
@@ -534,12 +548,69 @@ Extend an offer for an application.
 - `404` — application not found
 - `409` — offer already exists for this application (unique)
 
-**SQL**
+#### `POST /api/offers/:id/accept` — Token (applicant who owns the offer)
 
-```sql
-INSERT INTO offers (application_id, status)
-VALUES (?, 'Extended');
+Accept the offer for the current user's own application.
+
+**Responses**
+
+- `200` — `{ "data": { "id": 1, "status": "Accepted" } }`
+- `403` — the offer belongs to someone else
+- `404` — offer not found
+
+Accepting promotes the applicant to the `intern` role — the same automatic
+migration that happens when an application is marked `Hired`.
+
+#### `PATCH /api/offers/:id/status` — Token (admin)
+
+Move an offer through the lifecycle.
+
+**Body**
+
+```json
+{ "status": "Accepted" }
 ```
+
+Valid values: `Extended | Accepted | Declined`.
+
+**Responses**
+
+- `200` — `{ "data": { "id": 1, "status": "Accepted" } }`
+- `400` — invalid status
+- `404` — offer not found
+
+Setting `Accepted` also promotes the applicant to `intern`.
+
+---
+
+### Interns
+
+#### `GET /api/interns` — Token (admin)
+
+All interns with their hired role/department, offer status, and task progress
+(`tasks_total`, `tasks_done`, `progress` %).
+
+#### `GET /api/interns/tasks` — Token
+
+All tasks for admins; interns only get their own. Admins may filter with
+`?intern_id=`.
+
+#### `POST /api/interns/tasks` — Token (admin)
+
+Assign a task. Body: `{ intern_id, title, description?, due_date?, status? }` —
+`status` defaults to `pending` (`pending | in_progress | done`).
+
+#### `PATCH /api/interns/tasks/:id` — Token (admin or assigned intern)
+
+Update `{ status?, title?, description?, due_date? }`. Interns may only update
+their own tasks.
+
+#### `DELETE /api/interns/tasks/:id` — Token (admin)
+
+#### `PATCH /api/interns/users/:id/role` — Token (admin)
+
+Change a user's role — e.g. promote an intern to `admin`. Valid roles:
+`admin | applicant | intern`. Changing your own role is blocked.
 
 ---
 
