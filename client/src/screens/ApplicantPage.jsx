@@ -35,9 +35,11 @@ const statusClass = (status) => STATUS_INFO[status]?.className ?? "pending";
 function ApplicantPage() {
   const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [error, setError] = useState("");
   const [applying, setApplying] = useState(null);
+  const [accepting, setAccepting] = useState(false);
 
   const handleUnauthorized = useCallback((err) => {
     if (String(err.message).includes("token") || String(err.message).includes("401")) {
@@ -51,11 +53,13 @@ function ApplicantPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [apps, roleData] = await Promise.all([
+        const [apps, offerData, roleData] = await Promise.all([
           api("/applications"),
+          api("/offers"),
           api("/roles"),
         ]);
         setApplications(apps);
+        setOffers(offerData);
         setRoles(roleData);
       } catch (err) {
         if (!handleUnauthorized(err)) setError(err.message);
@@ -66,6 +70,9 @@ function ApplicantPage() {
   const latest = applications[0] ?? null;
   const current = latest ? STATUS_INFO[latest.status] ?? STATUS_INFO["In Review"] : null;
   const StatusIcon = current?.icon ?? Clock;
+  const latestOffer = latest
+    ? offers.find((o) => o.application_id === latest.id) ?? null
+    : null;
 
   const apply = async (roleId) => {
     setApplying(roleId);
@@ -81,6 +88,25 @@ function ApplicantPage() {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
       setApplying(null);
+    }
+  };
+
+  const acceptOffer = async () => {
+    if (!latestOffer) return;
+    setAccepting(true);
+    setError("");
+    try {
+      await api(`/offers/${latestOffer.id}/accept`, { method: "POST" });
+      setOffers((prev) =>
+        prev.map((o) =>
+          o.id === latestOffer.id ? { ...o, status: "Accepted" } : o,
+        ),
+      );
+      navigate("/intern", { replace: true });
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setAccepting(false);
     }
   };
 
@@ -111,6 +137,55 @@ function ApplicantPage() {
       </div>
 
       {error && <p className="form-error">{error}</p>}
+
+      {latestOffer && (
+        <section className="card offer-card">
+          <div className="card-head">
+            <h2>Job Offer</h2>
+            {latestOffer.status === "Rejected" || latestOffer.status === "Accepted" ? (
+              <span
+                className={`status ${
+                  latestOffer.status === "Accepted" ? "accepted" : "rejected"
+                }`}
+              >
+                {latestOffer.status}
+              </span>
+            ) : (
+              <span className="status pending">{latestOffer.status}</span>
+            )}
+          </div>
+          {latestOffer.status === "Extended" && (
+            <>
+              <p>
+                Congratulations! An offer has been extended for{" "}
+                <strong>{latest.role_title}</strong>. Accept it to become an
+                intern and continue to your intern dashboard.
+              </p>
+              <button
+                className="apply-btn"
+                onClick={acceptOffer}
+                disabled={accepting}
+              >
+                {accepting ? "Accepting..." : "Accept Offer"}
+              </button>
+            </>
+          )}
+          {latestOffer.status === "Accepted" && (
+            <>
+              <p>Offer accepted — welcome aboard!</p>
+              <button
+                className="apply-btn"
+                onClick={() => navigate("/intern", { replace: true })}
+              >
+                Go to intern dashboard
+              </button>
+            </>
+          )}
+          {latestOffer.status === "Declined" && (
+            <p>This offer was declined.</p>
+          )}
+        </section>
+      )}
 
       <div className="applicant-grid">
         <section className="card progress-card">
