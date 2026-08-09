@@ -5,6 +5,7 @@ import InternDashboard from "./components/InternDashboard.jsx";
 import { SignUpPage } from "./screens/SignUpPage";
 import { LoginPage } from "./screens/LoginPage";
 import RequireAuth from "./components/RequireAuth.jsx";
+import ProfilePage from "./components/ProfilePage.jsx";
 import { getSession } from "./api";
 import "./App.css";
 
@@ -54,6 +55,14 @@ function App() {
         element={
           <Guarded roles={["intern"]}>
             <InternDashboard />
+          </Guarded>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <Guarded roles={["admin", "applicant", "intern"]}>
+            <ProfilePage />
           </Guarded>
         }
       />

@@ -1,9 +1,15 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../db.js";
-import { users, applications } from "../db/schema.js";
+import {
+  users,
+  applications,
+  interviews,
+  offers,
+  internTasks,
+} from "../db/schema.js";
 import { verifyAuth } from "../middleware/auth.middleware.js";
 import {
   COOKIE_NAME,
@@ -203,8 +209,12 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
       const hired = await db
         .select({ id: applications.id })
         .from(applications)
-        .where(eq(applications.applicant_id, user.id))
-        .where(eq(applications.status, "Hired"))
+        .where(
+          and(
+            eq(applications.applicant_id, user.id),
+            eq(applications.status, "Hired"),
+          ),
+        )
         .get();
       if (hired) {
         await db
@@ -217,6 +227,70 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
     }
 
     res.json({ data: { role: freshRole, full_name: user.full_name } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Permanently delete the signed-in user's account along with all of their
+// applications, interviews, offers and intern tasks.
+authRouter.delete("/account", verifyAuth, async (req, res, next) => {
+  try {
+    const userId = Number(req.user.sub);
+    const user = await db
+      .select({ id: users.id, user_role: users.user_role })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
+
+    if (!user) {
+      res.clearCookie(COOKIE_NAME);
+      return res.status(401).json({ error: "Account no longer exists" });
+    }
+
+    if (compare(user.user_role, "admin")) {
+      const admins = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.user_role, "admin"))
+        .all();
+      if (admins.length <= 1) {
+        return res
+          .status(400)
+          .json({ error: "Cannot delete the only administrator account" });
+      }
+    }
+
+    const userApps = await db
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.applicant_id, userId))
+      .all();
+    const appIds = userApps.map((a) => a.id);
+
+    if (appIds.length) {
+      await db
+        .delete(interviews)
+        .where(inArray(interviews.application_id, appIds))
+        .run();
+      await db
+        .delete(offers)
+        .where(inArray(offers.application_id, appIds))
+        .run();
+      await db
+        .delete(applications)
+        .where(inArray(applications.id, appIds))
+        .run();
+    }
+
+    await db
+      .delete(internTasks)
+      .where(eq(internTasks.intern_id, userId))
+      .run();
+    await db.delete(users).where(eq(users.id, userId)).run();
+
+    res.clearCookie(COOKIE_NAME);
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

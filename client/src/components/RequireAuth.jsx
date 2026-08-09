@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { api, getSession, logout, saveSession } from "../api";
+import LoadingScreen from "./LoadingScreen.jsx";
 
 const HOME_BY_ROLE = {
   admin: "/dashboard",
@@ -39,11 +40,7 @@ function RequireAuth({ roles, children }) {
   }, []);
 
   if (state.checking) {
-    return (
-      <div className="page">
-        <p>Loading...</p>
-      </div>
-    );
+    return <LoadingScreen text="Signing you in..." />;
   }
 
   if (!state.role) {

@@ -25,6 +25,16 @@ const app = express();
 app.disable("x-powered-by");
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cookieParser());
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const ms = Date.now() - start;
+    console.log(
+      `[${new Date().toLocaleTimeString()}] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${ms}ms)`,
+    );
+  });
+  next();
+});
 app.use(
   cors({
     origin: `${process.env.ORIGIN}`,

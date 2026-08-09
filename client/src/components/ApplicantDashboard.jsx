@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Bell, Menu, FileText, LogOut } from "lucide-react";
+import { Bell, Menu, FileText, LogOut, UserRound } from "lucide-react";
 import { logout } from "../api";
 import ApplicantPage from "../screens/ApplicantPage.jsx";
 
@@ -54,6 +54,16 @@ function ApplicantDashboard() {
             >
               <FileText />
               <span>My Application</span>
+            </NavLink>
+            <NavLink
+              to="/profile"
+              onClick={closeOnMobile}
+              className={({ isActive }) =>
+                `nav-item${isActive ? " active" : ""}`
+              }
+            >
+              <UserRound />
+              <span>Profile</span>
             </NavLink>
           </nav>
         </aside>
