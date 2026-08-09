@@ -674,6 +674,15 @@ header {
   color: var(--muted);
 }
 
+.offer-card {
+  margin-bottom: 16px;
+
+  .apply-btn {
+    margin-top: 12px;
+    align-self: flex-start;
+  }
+}
+
 /**Pages**/
 .entry-page {
   display: flex;
