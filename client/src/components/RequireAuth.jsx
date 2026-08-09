@@ -24,9 +24,11 @@ function RequireAuth({ roles, children }) {
       }
       try {
         // Verify against the server so a stale or forged local session can't
-        // be used just by typing a URL.
+        // be used just by typing a URL. Keep this tab's token — /auth/me
+        // doesn't return one, and dropping it would make later requests fall
+        // back to the shared httpOnly cookie (last login wins).
         const fresh = await api("/auth/me");
-        saveSession(fresh);
+        saveSession({ ...fresh, token: getSession()?.token });
         if (!cancelled) setState({ checking: false, role: fresh.role });
       } catch {
         await logout();

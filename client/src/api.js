@@ -3,9 +3,12 @@ const SESSION_KEY = "iams_session";
 
 export async function api(path, { method = "GET", body } = {}) {
   const headers = { "Content-Type": "application/json" };
-  const token = getSession()?.token;
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  const session = getSession();
+  if (session?.role && !session.token) {
+    throw new Error("Missing session token — please sign in again");
+  }
+  if (session?.token) {
+    headers.Authorization = `Bearer ${session.token}`;
   }
 
   const res = await fetch(BASE + path, {
