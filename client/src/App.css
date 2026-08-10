@@ -1355,6 +1355,7 @@ textarea.field {
     max-width: 440px;
     margin: 0 auto;
     justify-content: center;
+    align-items: center;
   }
 
   .brandside-wrap {
