@@ -1,0 +1,235 @@
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+
+  .menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--on-primary);
+    color: var(--primary-foreground);
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      background: var(--on-primary-hover);
+    }
+  }
+
+  .logo {
+    height: 40px;
+  }
+
+  input {
+    flex: 1;
+    max-width: 400px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 15px;
+    outline: none;
+  }
+
+  .actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .bell {
+    width: 24px;
+    height: 24px;
+    color: var(--primary-foreground);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid var(--primary-foreground);
+    background: var(--primary-foreground);
+    object-fit: cover;
+    cursor: pointer;
+  }
+
+  .logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--primary-foreground);
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+}
+
+.backdrop {
+  display: none;
+}
+
+.layout {
+  display: flex;
+  min-height: calc(100vh - 64px);
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--card-background);
+  border-right: 1px solid var(--border);
+  padding: 20px 12px;
+  transition: width 0.2s ease;
+
+  &.collapsed {
+    width: 64px;
+
+    .nav-item {
+      justify-content: center;
+      padding: 12px;
+
+      span {
+        display: none;
+      }
+    }
+  }
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--foreground);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    &.active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+    }
+  }
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 24px;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 24px 16px;
+  }
+
+  header {
+    gap: 10px;
+    padding: 10px 16px;
+
+    input {
+      display: none;
+    }
+
+    .actions {
+      gap: 12px;
+    }
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    width: 220px;
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+
+    &.collapsed {
+      width: 220px;
+      transform: translateX(-100%);
+
+      .nav-item {
+        justify-content: flex-start;
+        padding: 12px 14px;
+
+        span {
+          display: block;
+        }
+      }
+    }
+
+    &:not(.collapsed) {
+      transform: translateX(0);
+    }
+  }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 90;
+  }
+}

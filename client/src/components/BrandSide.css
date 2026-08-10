@@ -1,6 +1,6 @@
 .brandside-wrap {
   background-color: var(--primary);
-  height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -68,4 +68,30 @@
 }
 .brand-copy{
   color: rgba(255, 255, 255, 0.603);
+}
+
+@media (max-width: 768px) {
+  .brandside-wrap {
+    flex: none;
+    min-height: 0;
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    padding: 24px;
+    gap: 24px;
+  }
+
+  .brandside-central > h1 {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 600px) {
+  .brandside-central > h1 {
+    font-size: 24px;
+  }
+
+  .brandside-central > p {
+    font-size: 14px;
+  }
 }
