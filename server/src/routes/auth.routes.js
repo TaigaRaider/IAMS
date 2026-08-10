@@ -24,7 +24,7 @@ const authRouter = Router();
 const BCRYPT_ROUNDS = 12;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_LOCKED_ATTEMPTS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000;
+const LOCKOUT_MS = 60 * 1000;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
