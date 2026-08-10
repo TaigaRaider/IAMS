@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2, UserRound } from "lucide-react";
 import { api, getSession, logout } from "../api";
+import "./ProfilePage.css";
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -100,7 +101,7 @@ function ProfilePage() {
       </div>
 
       <div className="card profile-card danger-card">
-        <h2>Danger Zone</h2>
+        <h2>Delete My Account</h2>
         <p className="muted danger-note">
           Deleting your account permanently removes your profile, applications,
           interviews, offers and tasks. This cannot be undone.

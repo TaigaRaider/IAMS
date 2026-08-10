@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, Clock, X, Briefcase, FileText, UserCheck } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
+import "./ApplicantPage.css";
 
 const STATUS_INFO = {
   "In Review": {

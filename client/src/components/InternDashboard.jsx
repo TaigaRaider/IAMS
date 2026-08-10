@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { api, logout, getSession } from "../api";
 import { compare } from "../utils/compare";
+import "./DashboardShell.css";
+import "./InternDashboard.css";
 
 const ONBOARDING_STEPS = [
   { label: "Submit required documents", done: true },

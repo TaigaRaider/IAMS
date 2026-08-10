@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, ShieldCheck } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
+import "./AdminInternsPage.css";
 
 const initials = (name) =>
   (name ?? "?")

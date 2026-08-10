@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { Bell, Menu, FileText, LogOut, UserRound } from "lucide-react";
 import { logout } from "../api";
 import ApplicantPage from "../screens/ApplicantPage.jsx";
+import "./DashboardShell.css";
 
 function ApplicantDashboard() {
   const navigate = useNavigate();
