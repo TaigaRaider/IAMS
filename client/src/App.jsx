@@ -15,7 +15,7 @@ const HOME_BY_ROLE = {
   intern: "/intern",
 };
 
-("eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODYxMzYxNDgsImlkIjoiMDE5ZmRkZmUtNzQwMS03YjdiLWI5NDEtZjI4YTZhNmJkM2Q0Iiwia2lkIjoiTkptMXJzNVJzb1N2emNrZE5Kcl9nWFhjTEZiV1J4MUpOLW5uc2RUOWFuSSIsInJpZCI6ImM2YTkwMTFmLWJkNWEtNGIwMC04ZGViLTg5YjRmM2Y4MmZkNyJ9.o948sLYd7ns_l7UDPeec9otGn9oRHNcjOFqWJZGbDMNNsnT-FsOGYCJrLbVIVtrC4VmjeDASpMVn1fYZMYQ5Dw");
+
 function Home() {
   const session = getSession();
   return <Navigate to={HOME_BY_ROLE[session?.role] ?? "/login"} replace />;
