@@ -13,7 +13,7 @@ client/dist
 client/dist-ssr
 *.local
 
-*.env
+_testing/
 server/data
 
 # Editor directories and files
