@@ -23,7 +23,7 @@ const authRouter = Router();
 
 const BCRYPT_ROUNDS = 12;
 const MIN_PASSWORD_LENGTH = 8;
-const MAX_LOCKED_ATTEMPTS = 5;
+const MAX_LOCKED_ATTEMPTS = 15;
 const LOCKOUT_MS = 60 * 1000;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -120,7 +120,7 @@ authRouter.post("/signup", async (req, res, next) => {
 
 authRouter.post("/login", async (req, res, next) => {
   const { username, password } = req.body ?? {};
-  const cleanUsername = typeof username === "string" ? username.trim() : "";
+  const cleanUsername = typeof(username) === "string" ? username.trim() : "";
   if (!cleanUsername || !password) {
     return res.status(400).json({ error: "Username and password are required" });
   }
