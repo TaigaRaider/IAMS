@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FileText } from "lucide-react";
 import { api, logout } from "../api";
+import EmptyState from "../components/EmptyState.jsx";
 
 const STATUSES = ["In Review", "Shortlisted", "Rejected", "Hired"];
 
@@ -75,7 +77,11 @@ function ApplicantsPage() {
       {error && <p className="form-error">{error}</p>}
       <div className="card table-card">
         {applicants.length === 0 ? (
-          <p>No applications yet.</p>
+          <EmptyState
+            icon={FileText}
+            title="No applications yet"
+            text="Applications will appear here once candidates apply."
+          />
         ) : (
           <table className="applicants-table">
             <thead>

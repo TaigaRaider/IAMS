@@ -100,6 +100,43 @@ function ProfilePage() {
         </dl>
       </div>
 
+      <div className="card profile-card deactivate-danger-card">
+        <h2>Deactivate My Account</h2>
+        <p className="muted danger-note">
+          Deactivating your account keeps your account for you for when you come back.
+        </p>
+        {!confirming ? (
+          <button
+            className="btn deactivate-danger-btn"
+            onClick={() => setConfirming(true)}
+          >
+            Deactivate Account
+          </button>
+        ) : (
+          <div className="confirm-row">
+            <p className="muted confirm-note">
+              Are you sure?
+            </p>
+            <div className="confirm-buttons">
+              <button
+                className="btn ghost-btn"
+                onClick={() => setConfirming(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn deactivate-danger-btn"
+                onClick={deleteAccount}
+                disabled={deleting}
+              >
+                {deleting ? "Deactivating..." : "Yes, deactivate my account"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="card profile-card danger-card">
         <h2>Delete My Account</h2>
         <p className="muted danger-note">

@@ -176,3 +176,42 @@
     gap: 10px;
   }
 }
+.deactivate-danger-card {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.04);
+
+  h2 {
+    color: #dcb226;
+  }
+}
+
+.deactivate-danger-note {
+  margin: 0 0 16px;
+}
+
+.deactivate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.deactivate-danger-btn {
+  background: #dcb226;
+  color: #3a2b01;
+
+  &:hover:not(:disabled) {
+    background: #ecdd02;
+  }
+}

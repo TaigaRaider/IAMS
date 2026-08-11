@@ -17,23 +17,36 @@
   max-width: 50%;
 }
 
-.form > h2,
-.form > p,
+.form-card {
+  width: 100%;
+  max-width: 460px;
+  box-sizing: border-box;
+  background: var(--card-background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 40px 36px;
+}
+
+.form-card > h2,
+.form-card > p,
 .access-form {
   width: 100%;
-  max-width: 440px;
 }
 .access-form {
   display: flex;
   flex-direction: column;
 }
-.form > h2 {
-  font-size: 36px;
+.form-card > h2 {
+  margin: 0 0 6px;
+  font-size: 30px;
   letter-spacing: -0.02em;
-  margin-bottom: 6px;
+  color: var(--heading);
 }
-.form > p {
-  margin-bottom: 23px;
+.form-card > p {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 15px;
 }
 
 .reference {
@@ -94,7 +107,11 @@
     padding: 32px 20px;
   }
 
-  .form > h2 {
-    font-size: 28px;
+  .form-card {
+    padding: 28px 22px;
+  }
+
+  .form-card > h2 {
+    font-size: 26px;
   }
 }

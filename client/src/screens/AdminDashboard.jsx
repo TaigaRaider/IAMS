@@ -1,27 +1,35 @@
 import { useEffect, useState, useCallback } from "react";
-import { NavLink, Link, Routes, Route, useNavigate } from "react-router-dom";
+import { Link, Routes, Route, useNavigate } from "react-router-dom";
 import {
-  Bell,
   LayoutDashboard,
   Users,
   Briefcase,
   Plus,
-  Menu,
   FileText,
   CalendarClock,
   BadgeCheck,
-  LogOut,
   GraduationCap,
   UserRound,
+  BarChart3,
 } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
-import LoadingScreen from "../components/LoadingScreen.jsx";
-import AddRoleForm from "../components/AddRoleForm.jsx";
+import EmptyState from "../components/EmptyState.jsx";
+import { OverviewSkeleton } from "../components/Skeletons.jsx";import AddRoleForm from "../components/AddRoleForm.jsx";
+import DashboardShell from "../components/DashboardShell.jsx";
+import InterviewPage from "../components/InterviewPage.jsx";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 import AdminInternsPage from "./AdminInternsPage.jsx";
 import "./AdminDashboard.css";
-import "../components/DashboardShell.css";
+
+const ADMIN_NAV = [
+  { to: "/dashboard", end: true, icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard/applicants", icon: Users, label: "Applicants" },
+  { to: "/dashboard/interns", icon: GraduationCap, label: "Interns" },
+  { to: "/dashboard/interviews", icon: CalendarClock, label: "Interviews" },
+  { to: "/dashboard/offers", icon: Briefcase, label: "Offers" },
+  { to: "/profile", icon: UserRound, label: "Profile" },
+];
 
 function Overview() {
   const navigate = useNavigate();
@@ -50,7 +58,7 @@ function Overview() {
   }, [navigate]);
 
   if (error) return <p className="form-error">{error}</p>;
-  if (!stats) return <LoadingScreen text="Loading dashboard..." />;
+  if (!stats) return <OverviewSkeleton />;
 
   const recent = applications.slice(0, 4);
   const depts = stats.applicationsByDepartment;
@@ -107,7 +115,12 @@ function Overview() {
             </Link>
           </div>
           {recent.length === 0 ? (
-            <p>No applications yet.</p>
+            <EmptyState
+              icon={Users}
+              title="No applications yet"
+              text="Applications will appear here once candidates apply."
+              compact
+            />
           ) : (
             <ul className="applicant-list">
               {recent.map((app) => (
@@ -145,7 +158,12 @@ function Overview() {
         <div className="card">
           <h2>Applications by Department</h2>
           {depts.length === 0 ? (
-            <p>No data yet.</p>
+            <EmptyState
+              icon={BarChart3}
+              title="No data yet"
+              text="Application data by department will show here."
+              compact
+            />
           ) : (
             <ul className="dept-list">
               {depts.map((dept) => (
@@ -225,7 +243,11 @@ function OffersPage() {
       {error && <p className="form-error">{error}</p>}
       <div className="card table-card">
         {offers.length === 0 ? (
-          <p>No offers extended yet.</p>
+          <EmptyState
+            icon={BadgeCheck}
+            title="No offers extended yet"
+            text="Offers you extend to applicants will appear here."
+          />
         ) : (
           <table className="applicants-table">
             <thead>
@@ -298,109 +320,17 @@ function AddRolePage() {
 }
 
 function AdminDashboard() {
-  const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(() => window.innerWidth <= 768);
-
-  const closeOnMobile = () => {
-    if (window.innerWidth <= 768) setCollapsed(true);
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login", { replace: true });
-  };
-
   return (
-    <>
-      <header>
-        <button
-          className="menu-btn"
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label="Toggle sidebar"
-        >
-          <Menu />
-        </button>
-        <img src="/iamslogo.png" alt="Logo" className="logo" />
-        <input type="text" placeholder="Search..." />
-        <div className="actions">
-          <Bell className="bell" />
-          <svg className="avatar" viewBox="0 0 64 64" aria-hidden="true">
-            <circle cx="32" cy="24" r="14" fill="#f0e6ff" />
-            <path d="M10 58c4-14 12-18 22-18s18 4 22 18" fill="#f0e6ff" />
-          </svg>
-          <button className="logout-btn" onClick={handleLogout} aria-label="Log out">
-            <LogOut size={18} />
-          </button>
-        </div>
-      </header>
-      {!collapsed && <div className="backdrop" onClick={closeOnMobile} />}
-      <div className="layout">
-        <aside className={collapsed ? "sidebar collapsed" : "sidebar"}>
-          <nav>
-            <NavLink
-              to="/dashboard"
-              end
-              onClick={closeOnMobile}
-              className={({ isActive }) =>
-                `nav-item${isActive ? " active" : ""}`
-              }
-            >
-              <LayoutDashboard />
-              <span>Dashboard</span>
-            </NavLink>
-            <NavLink
-              to="/dashboard/applicants"
-              onClick={closeOnMobile}
-              className={({ isActive }) =>
-                `nav-item${isActive ? " active" : ""}`
-              }
-            >
-              <Users />
-              <span>Applicants</span>
-            </NavLink>
-            <NavLink
-              to="/dashboard/interns"
-              onClick={closeOnMobile}
-              className={({ isActive }) =>
-                `nav-item${isActive ? " active" : ""}`
-              }
-            >
-              <GraduationCap />
-              <span>Interns</span>
-            </NavLink>
-            <NavLink
-              to="/dashboard/offers"
-              onClick={closeOnMobile}
-              className={({ isActive }) =>
-                `nav-item${isActive ? " active" : ""}`
-              }
-            >
-              <Briefcase />
-              <span>Offers</span>
-            </NavLink>
-            <NavLink
-              to="/profile"
-              onClick={closeOnMobile}
-              className={({ isActive }) =>
-                `nav-item${isActive ? " active" : ""}`
-              }
-            >
-              <UserRound />
-              <span>Profile</span>
-            </NavLink>
-          </nav>
-        </aside>
-        <main className="content">
-          <Routes>
-            <Route index element={<Overview />} />
-            <Route path="applicants" element={<AdminApplicantsPage />} />
-            <Route path="interns" element={<AdminInternsPage />} />
-            <Route path="offers" element={<OffersPage />} />
-            <Route path="add" element={<AddRolePage />} />
-          </Routes>
-        </main>
-      </div>
-    </>
+    <DashboardShell navItems={ADMIN_NAV}>
+      <Routes>
+        <Route index element={<Overview />} />
+        <Route path="applicants" element={<AdminApplicantsPage />} />
+        <Route path="interns" element={<AdminInternsPage />} />
+        <Route path="interviews" element={<InterviewPage />} />
+        <Route path="offers" element={<OffersPage />} />
+        <Route path="add" element={<AddRolePage />} />
+      </Routes>
+    </DashboardShell>
   );
 }
 
