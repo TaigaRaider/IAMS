@@ -74,8 +74,29 @@ internRouter.get("/interns", verifyAuth, requireAdmin, async (req, res, next) =>
 internRouter.get("/interns/tasks", verifyAuth, async (req, res, next) => {
   try {
     const isAdmin = compare(req.user.role, "admin");
-    const internId = isAdmin ? Number(req.query.intern_id) || null : req.user.sub;
-    const query = db
+    if (isAdmin) {
+      const internId = Number(req.query.intern_id) || null;
+      const query = db
+        .select({
+          id: internTasks.id,
+          intern_id: internTasks.intern_id,
+          intern_name: users.full_name,
+          title: internTasks.title,
+          description: internTasks.description,
+          status: internTasks.status,
+          due_date: internTasks.due_date,
+          created_at: internTasks.created_at,
+        })
+        .from(internTasks)
+        .leftJoin(users, eq(users.id, internTasks.intern_id))
+        .orderBy(desc(internTasks.created_at));
+      const rows = internId
+        ? await query.where(eq(internTasks.intern_id, internId)).all()
+        : await query.all();
+      return res.json({ data: rows });
+    }
+
+    const rows = await db
       .select({
         id: internTasks.id,
         intern_id: internTasks.intern_id,
@@ -88,10 +109,9 @@ internRouter.get("/interns/tasks", verifyAuth, async (req, res, next) => {
       })
       .from(internTasks)
       .leftJoin(users, eq(users.id, internTasks.intern_id))
-      .orderBy(desc(internTasks.created_at));
-    const rows = internId
-      ? await query.where(eq(internTasks.intern_id, internId)).all()
-      : await query.all();
+      .where(eq(internTasks.intern_id, Number(req.user.sub)))
+      .orderBy(desc(internTasks.created_at))
+      .all();
     res.json({ data: rows });
   } catch (err) {
     next(err);

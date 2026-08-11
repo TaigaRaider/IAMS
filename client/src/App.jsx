@@ -6,6 +6,7 @@ import { AuthPage } from "./screens/AuthPage";
 import { IntroPage } from "./screens/IntroPage.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
 import ProfilePage from "./components/ProfilePage.jsx";
+import AccountStatus from "./components/AccountStatus.jsx";
 import "./App.css";
 import "./shared.css";
 
@@ -48,6 +49,14 @@ function App() {
         element={
           <Guarded roles={["admin", "applicant", "intern"]}>
             <ProfilePage />
+          </Guarded>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <Guarded roles={["admin", "applicant", "intern"]}>
+            <AccountStatus />
           </Guarded>
         }
       />

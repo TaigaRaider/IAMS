@@ -14,6 +14,8 @@ export const users = sqliteTable(
     })
       .notNull()
       .default("applicant"),
+    is_deactivated: integer("is_deactivated").notNull().default(0),
+    is_deleted: integer("is_deleted").notNull().default(0),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

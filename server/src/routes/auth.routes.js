@@ -1,18 +1,14 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../db.js";
 import {
   users,
   applications,
-  interviews,
-  offers,
-  internTasks,
 } from "../db/schema.js";
 import { verifyAuth } from "../middleware/auth.middleware.js";
 import {
-  COOKIE_NAME,
   TOKEN_ISSUER,
   TOKEN_AUDIENCE,
   TOKEN_ALGORITHM,
@@ -45,15 +41,6 @@ function isValidPassword(password) {
     return false;
   }
   return /[a-zA-Z]/.test(password) && /\d/.test(password);
-}
-
-function expiresInSeconds(expiresIn) {
-  const match = /^(\d+)([smhd])$/.exec(expiresIn ?? "1h");
-  if (!match) return 60 * 60;
-  const value = Number(match[1]);
-  const unit = match[2];
-  const seconds = { s: 1, m: 60, h: 60 * 60, d: 24 * 60 * 60 }[unit];
-  return value * seconds;
 }
 
 function isLocked(username) {
@@ -138,6 +125,11 @@ authRouter.post("/login", async (req, res, next) => {
       .where(eq(users.username, cleanUsername))
       .get();
 
+    // A soft-deleted account no longer exists — never reveal that it did.
+    if (user && compare(Number(user.is_deleted), 1)) {
+      return res.status(401).json({ error: "Account doesn't exist" });
+    }
+
     const passwordOk = user
       ? await bcrypt.compare(password, user.password_hash)
       : false;
@@ -161,18 +153,12 @@ authRouter.post("/login", async (req, res, next) => {
       },
     );
 
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: compare(process.env.NODE_ENV, "production"),
-      maxAge: expiresInSeconds(expiresIn) * 1000,
-    });
-
     res.json({
       data: {
         role: user.user_role,
         full_name: user.full_name,
         token,
+        deactivated: compare(Number(user.is_deactivated), 1),
       },
     });
   } catch (err) {
@@ -181,11 +167,6 @@ authRouter.post("/login", async (req, res, next) => {
 });
 
 authRouter.post("/logout", (_req, res) => {
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: compare(process.env.NODE_ENV, "production"),
-  });
   res.json({ data: { ok: true } });
 });
 
@@ -200,18 +181,18 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
         id: users.id,
         full_name: users.full_name,
         user_role: users.user_role,
+        is_deactivated: users.is_deactivated,
       })
       .from(users)
       .where(eq(users.id, userId))
       .get();
 
     if (!user) {
-      res.clearCookie(COOKIE_NAME);
       return res.status(401).json({ error: "Account no longer exists" });
     }
 
     const freshRole = user.user_role;
-    if (compare(freshRole, "applicant")) {
+    if (compare(freshRole, "applicant") && !compare(Number(user.is_deactivated), 1)) {
       const hired = await db
         .select({ id: applications.id })
         .from(applications)
@@ -228,37 +209,144 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
           .set({ user_role: "intern" })
           .where(eq(users.id, user.id))
           .run();
-        return res.json({ data: { role: "intern", full_name: user.full_name } });
+        return res.json({
+          data: {
+            role: "intern",
+            full_name: user.full_name,
+            deactivated: false,
+          },
+        });
       }
     }
 
-    res.json({ data: { role: freshRole, full_name: user.full_name } });
+    res.json({
+      data: {
+        role: freshRole,
+        full_name: user.full_name,
+        deactivated: compare(Number(user.is_deactivated), 1),
+      },
+    });
   } catch (err) {
     next(err);
   }
 });
 
-// Permanently delete the signed-in user's account along with all of their
-// applications, interviews, offers and intern tasks.
+// Reactivate a deactivated account. Only possible while the account is still
+// deactivated; issues a fresh session so the user is signed in again.
+authRouter.patch("/account/reactivate", verifyAuth, async (req, res, next) => {
+  try {
+    const userId = Number(req.user.sub);
+    const user = await db
+      .select({
+        id: users.id,
+        full_name: users.full_name,
+        user_role: users.user_role,
+        is_deactivated: users.is_deactivated,
+        is_deleted: users.is_deleted,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
+    if (!user || compare(Number(user.is_deleted), 1)) {
+      return res.status(401).json({ error: "Account doesn't exist" });
+    }
+    if (!compare(Number(user.is_deactivated), 1)) {
+      return res.status(400).json({ error: "Account is not deactivated" });
+    }
+
+    await db
+      .update(users)
+      .set({ is_deactivated: 0 })
+      .where(eq(users.id, userId))
+      .run();
+
+    const expiresIn = process.env.JWT_EXPIRES_IN || "1h";
+    const token = jwt.sign(
+      { sub: user.id, role: user.user_role },
+      process.env.JWT_SECRET,
+      {
+        algorithm: TOKEN_ALGORITHM,
+        issuer: TOKEN_ISSUER,
+        audience: TOKEN_AUDIENCE,
+        expiresIn,
+      },
+    );
+
+    res.json({
+      data: {
+        role: user.user_role,
+        full_name: user.full_name,
+        token,
+        deactivated: false,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Deactivate the signed-in account — a required step before deletion.
+// The user stays signed in but is confined to account management
+// (reactivate / delete) until they reactivate.
+authRouter.patch("/account/deactivate", verifyAuth, async (req, res, next) => {
+  try {
+    const userId = Number(req.user.sub);
+    const user = await db
+      .select({ id: users.id, is_deleted: users.is_deleted })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
+    if (!user || compare(Number(user.is_deleted), 1)) {
+      return res.status(401).json({ error: "Account doesn't exist" });
+    }
+
+    await db
+      .update(users)
+      .set({ is_deactivated: 1 })
+      .where(eq(users.id, userId))
+      .run();
+
+    res.json({ data: { deactivated: true } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Soft-delete the signed-in account. Only deactivated accounts can be
+// deleted — deleting is what really removes the account (sets is_deleted = 1).
+// The row is kept so the audit trail / related data survives, but every
+// subsequent request reports "Account doesn't exist".
 authRouter.delete("/account", verifyAuth, async (req, res, next) => {
   try {
     const userId = Number(req.user.sub);
     const user = await db
-      .select({ id: users.id, user_role: users.user_role })
+      .select({
+        id: users.id,
+        user_role: users.user_role,
+        is_deactivated: users.is_deactivated,
+        is_deleted: users.is_deleted,
+      })
       .from(users)
       .where(eq(users.id, userId))
       .get();
 
-    if (!user) {
-      res.clearCookie(COOKIE_NAME);
-      return res.status(401).json({ error: "Account no longer exists" });
+    if (!user || compare(Number(user.is_deleted), 1)) {
+      return res.status(401).json({ error: "Account doesn't exist" });
     }
 
+    if (!compare(Number(user.is_deactivated), 1)) {
+      return res
+        .status(400)
+        .json({ error: "You must deactivate your account before deleting it" });
+    }
+
+    // Never allow the last active admin to be soft-deleted (it would lock
+    // everyone out of the admin area entirely).
     if (compare(user.user_role, "admin")) {
       const admins = await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.user_role, "admin"))
+        .where(and(eq(users.user_role, "admin"), eq(users.is_deleted, 0)))
         .all();
       if (admins.length <= 1) {
         return res
@@ -267,36 +355,13 @@ authRouter.delete("/account", verifyAuth, async (req, res, next) => {
       }
     }
 
-    const userApps = await db
-      .select({ id: applications.id })
-      .from(applications)
-      .where(eq(applications.applicant_id, userId))
-      .all();
-    const appIds = userApps.map((a) => a.id);
-
-    if (appIds.length) {
-      await db
-        .delete(interviews)
-        .where(inArray(interviews.application_id, appIds))
-        .run();
-      await db
-        .delete(offers)
-        .where(inArray(offers.application_id, appIds))
-        .run();
-      await db
-        .delete(applications)
-        .where(inArray(applications.id, appIds))
-        .run();
-    }
-
     await db
-      .delete(internTasks)
-      .where(eq(internTasks.intern_id, userId))
+      .update(users)
+      .set({ is_deleted: 1 })
+      .where(eq(users.id, userId))
       .run();
-    await db.delete(users).where(eq(users.id, userId)).run();
 
-    res.clearCookie(COOKIE_NAME);
-    res.json({ success: true });
+    res.json({ data: { deleted: true } });
   } catch (err) {
     next(err);
   }

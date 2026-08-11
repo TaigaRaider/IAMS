@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Trash2, UserRound } from "lucide-react";
-import { api, getSession, logout } from "../api";
+import { ArrowLeft, Power, UserRound } from "lucide-react";
+import { api, getSession, logout, saveSession } from "../api";
 import "./ProfilePage.css";
 
 function ProfilePage() {
@@ -9,8 +9,8 @@ function ProfilePage() {
   const session = getSession();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
-  const [deleting, setDeleting] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -38,16 +38,17 @@ function ProfilePage() {
     })();
   }, [handleUnauthorized]);
 
-  const deleteAccount = async () => {
-    setDeleting(true);
+  const deactivateAccount = async () => {
+    setBusy(true);
     setError("");
     try {
-      await api("/auth/account", { method: "DELETE" });
-      sessionStorage.removeItem("iams_session");
-      navigate("/login", { replace: true });
+      await api("/auth/account/deactivate", { method: "PATCH" });
+      // Stay signed in but confined to the account page until reactivated.
+      saveSession({ ...getSession(), deactivated: true });
+      navigate("/account", { replace: true });
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
-      setDeleting(false);
+      setBusy(false);
     }
   };
 
@@ -57,7 +58,11 @@ function ProfilePage() {
     } else {
       const role = session?.role ?? "applicant";
       navigate(
-        role === "admin" ? "/dashboard" : role === "intern" ? "/intern" : "/applicant",
+        role === "admin"
+          ? "/dashboard"
+          : role === "intern"
+            ? "/intern"
+            : "/applicant",
         { replace: true },
       );
     }
@@ -103,73 +108,36 @@ function ProfilePage() {
       <div className="card profile-card deactivate-danger-card">
         <h2>Deactivate My Account</h2>
         <p className="muted danger-note">
-          Deactivating your account keeps your account for you for when you come back.
+          Deactivating keeps your account for you till you're ready to come
+          back. While deactivated you'll be moved to the account page, where you
+          can reactivate or permanently delete your account — the rest of the
+          app is locked until you reactivate.
         </p>
-        {!confirming ? (
+        {!confirmingDeactivate ? (
           <button
             className="btn deactivate-danger-btn"
-            onClick={() => setConfirming(true)}
+            onClick={() => setConfirmingDeactivate(true)}
           >
+            <Power size={16} />
             Deactivate Account
           </button>
         ) : (
           <div className="confirm-row">
-            <p className="muted confirm-note">
-              Are you sure?
-            </p>
+            <p className="muted confirm-note">Are you sure?</p>
             <div className="confirm-buttons">
               <button
                 className="btn ghost-btn"
-                onClick={() => setConfirming(false)}
-                disabled={deleting}
+                onClick={() => setConfirmingDeactivate(false)}
+                disabled={busy}
               >
                 Cancel
               </button>
               <button
                 className="btn deactivate-danger-btn"
-                onClick={deleteAccount}
-                disabled={deleting}
+                onClick={deactivateAccount}
+                disabled={busy}
               >
-                {deleting ? "Deactivating..." : "Yes, deactivate my account"}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="card profile-card danger-card">
-        <h2>Delete My Account</h2>
-        <p className="muted danger-note">
-          Deleting your account permanently removes your profile, applications,
-          interviews, offers and tasks. This cannot be undone.
-        </p>
-        {!confirming ? (
-          <button
-            className="btn danger-btn"
-            onClick={() => setConfirming(true)}
-          >
-            <Trash2 size={16} />
-            Delete Account
-          </button>
-        ) : (
-          <div className="confirm-row">
-            <p className="muted confirm-note">
-              Are you sure? This is permanent.
-            </p>
-            <div className="confirm-buttons">
-              <button
-                className="btn ghost-btn"
-                onClick={() => setConfirming(false)}
-                disabled={deleting}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn danger-btn"
-                onClick={deleteAccount}
-                disabled={deleting}
-              >
-                {deleting ? "Deleting..." : "Yes, delete my account"}
+                {busy ? "Deactivating..." : "Yes, deactivate my account"}
               </button>
             </div>
           </div>
