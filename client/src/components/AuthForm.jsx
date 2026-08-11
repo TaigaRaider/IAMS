@@ -46,7 +46,11 @@ export const AuthForm = ({ mode }) => {
       });
       if (isLogin) {
         saveSession(data);
-        goHome(navigate, data.role);
+        if (data.deactivated) {
+          navigate("/account", { replace: true });
+        } else {
+          goHome(navigate, data.role);
+        }
       } else {
         navigate("/login");
       }

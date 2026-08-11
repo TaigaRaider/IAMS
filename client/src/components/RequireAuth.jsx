@@ -11,7 +11,7 @@ const HOME_BY_ROLE = {
 
 function RequireAuth({ roles, children }) {
   const location = useLocation();
-  const [state, setState] = useState({ checking: true, role: null });
+  const [state, setState] = useState({ checking: true, role: null, deactivated: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -19,7 +19,7 @@ function RequireAuth({ roles, children }) {
       const local = getSession();
       if (!local?.role) {
         await logout();
-        if (!cancelled) setState({ checking: false, role: null });
+        if (!cancelled) setState({ checking: false, role: null, deactivated: false });
         return;
       }
       try {
@@ -29,10 +29,15 @@ function RequireAuth({ roles, children }) {
         // back to the shared httpOnly cookie (last login wins).
         const fresh = await api("/auth/me");
         saveSession({ ...fresh, token: getSession()?.token });
-        if (!cancelled) setState({ checking: false, role: fresh.role });
+        if (fresh.deactivated) {
+          // Deactivated accounts are confined to the account page.
+          if (!cancelled) setState({ checking: false, role: null, deactivated: true });
+          return;
+        }
+        if (!cancelled) setState({ checking: false, role: fresh.role, deactivated: false });
       } catch {
         await logout();
-        if (!cancelled) setState({ checking: false, role: null });
+        if (!cancelled) setState({ checking: false, role: null, deactivated: false });
       }
     };
     check();
@@ -47,6 +52,10 @@ function RequireAuth({ roles, children }) {
 
   if (!state.role) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (state.deactivated) {
+    return <Navigate to="/account" replace state={{ from: location.pathname }} />;
   }
 
   if (!roles.includes(state.role)) {

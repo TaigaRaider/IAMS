@@ -22,6 +22,13 @@
       "when": 1786440390076,
       "tag": "0002_complete_lifeguard",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786458067544,
+      "tag": "0003_whole_sentry",
+      "breakpoints": true
     }
   ]
 }

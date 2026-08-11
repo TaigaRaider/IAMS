@@ -134,28 +134,31 @@ carry issuer `iams` and audience `iams-client` or it is rejected.
 2. **Login** — client sends `username`, `password`. Server looks up the user,
    compares the password hash with `bcrypt.compare()`. On success it signs a
    JWT (`jsonwebtoken.sign`) containing the user id, role, issuer, and
-   audience — **and sets it as an `HttpOnly` cookie** (`iams_token`) rather
-   than returning it in the body:
+   audience — **and returns the token in the body** (there is no session
+   cookie):
    ```json
-   { "data": { "role": "applicant", "full_name": "Anomalous" } }
+   { "data": { "role": "applicant", "full_name": "Anomalous", "token": "<jwt>", "deactivated": false } }
    ```
 
-   Cookie flags: `HttpOnly` (JS cannot read it → XSS can't steal it),
-   `SameSite=Strict` (CSRF-resistant), `Secure` when `NODE_ENV=production`,
-   `Max-Age` from `JWT_EXPIRES_IN`.
+   Sessions are **per-tab**: the client keeps the JWT in `sessionStorage` and
+   sends it on every request as `Authorization: Bearer <token>`. The server
+   trusts only this header — no httpOnly cookie is set or accepted, so two
+   tabs can be signed in as different accounts on the same device.
 
    **Admin and applicant both log in through the same login page/endpoint.**
    There is no separate admin login — the server reads `user_role` from the
    `users` table, embeds it in the token, and returns it in the response. The
    client uses `role` from the response to redirect: `admin` → admin dashboard,
-   `applicant` → applicant dashboard.
-3. **Every authenticated request** — the browser automatically attaches the
-   cookie (fetch is called with `credentials: "include"`). The server extracts
-   it and runs it through `jsonwebtoken.verify()` with the same secret; if
+   `applicant` → applicant dashboard, `intern` → intern dashboard. A user whose
+   account is `deactivated` is redirected to the account-management page
+   instead.
+3. **Every authenticated request** — the client sends the per-tab JWT in the
+   `Authorization` header (fetch is called with `credentials: "omit"`). The
+   server runs it through `jsonwebtoken.verify()` with the same secret; if
    valid, the payload (user id + role) is attached to the request and the
    handler proceeds. If missing, expired, or tampered with → `401`.
-4. **Logout** — `POST /api/auth/logout` clears the cookie server-side. The
-   client also drops its `localStorage` session copy.
+4. **Logout** — `POST /api/auth/logout` acknowledges the logout; the client
+   drops its `sessionStorage` copy. (No cookie to clear client- or server-side.)
 
 ### Why JWT
 
@@ -177,9 +180,9 @@ const TOKEN_VERIFY_OPTIONS = {
 };
 
 export function verifyAuth(req, res, next) {
-  // Cookie first, Bearer header kept for API/script clients
-  const token = req.cookies?.[COOKIE_NAME]
-    ?? req.headers.authorization?.startsWith("Bearer ")
+  // Token-only auth: the Authorization Bearer header (per-tab session).
+  // No cookie fallback — a tokenless request is simply unauthorized.
+  const token = req.headers.authorization?.startsWith("Bearer ")
     && req.headers.authorization.slice(7);
   if (!token) {
     return res.status(401).json({ error: "Missing auth token" });
@@ -285,13 +288,12 @@ the response `role` tells the client where to redirect.
 
 **Responses**
 
-- `200` — `{ "data": { "role": "applicant", "full_name": "Anomalous" } }`
-  plus `Set-Cookie: iams_token=<jwt>; HttpOnly; SameSite=Strict` (role is
-  `admin` for admin accounts). No token in the body.
+- `200` — `{ "data": { "role": "applicant", "full_name": "Anomalous", "token": "<jwt>", "deactivated": false } }`
+  (`role` is `admin`/`intern` for those accounts; `deactivated` is `true` for
+  deactivated accounts, which the client sends to the account page). No cookie.
 - `400` — missing username/password
 - `401` — invalid credentials
-- `429` — account temporarily locked (5 failed attempts, 15 min), login rate
-  limit (10 per 15 min), or API rate limit exceeded
+- `429` — account temporarily locked (failed attempts), login rate limit, or API rate limit exceeded
 
 **SQL**
 
@@ -312,15 +314,58 @@ Clear the session cookie.
 
 #### `GET /api/auth/me` — Token
 
-Return the **current** role and name straight from the DB (the JWT payload can
-lag behind a role change). Also self-heals: an applicant whose application is
-now `Hired` (or whose offer was accepted) is migrated to the `intern` role
-here, so the client redirects them to the intern dashboard automatically.
+Return the **current** role, name, and `deactivated` flag straight from the DB
+(the JWT payload can lag behind a role change). Also self-heals: an applicant
+whose application is now `Hired` (or whose offer was accepted) is migrated to
+the `intern` role here, so the client redirects them to the intern dashboard
+automatically (deactivated accounts are never auto-promoted).
 
 **Responses**
 
-- `200` — `{ "data": { "role": "applicant|intern|admin", "full_name": "..." } }`
+- `200` — `{ "data": { "role": "applicant|intern|admin", "full_name": "...", "deactivated": false } }`
 - `401` — missing/expired token, or account deleted
+
+---
+
+### Account management (deactivation / deletion)
+
+Deactivated accounts can still sign in, but the server confines them: every
+authenticated route returns `403` until they reactivate, except the
+account-management endpoints below.
+
+#### `PATCH /api/auth/account/deactivate` — Token
+
+Pause the signed-in account (`is_deactivated = 1`). The user stays signed in
+but is moved to the account page, where they can only reactivate or delete.
+
+**Responses**
+
+- `200` — `{ "data": { "deactivated": true } }`
+- `401` — missing token, or account deleted
+
+#### `PATCH /api/auth/account/reactivate` — Token
+
+Bring a deactivated account back (`is_deactivated = 0`) and issue a fresh
+session. Only works while the account is deactivated.
+
+**Responses**
+
+- `200` — `{ "data": { "role": "...", "full_name": "...", "token": "<jwt>", "deactivated": false } }`
+- `400` — account is not deactivated
+- `401` — missing token, or account deleted
+
+#### `DELETE /api/auth/account` — Token
+
+Permanently soft-delete the signed-in account (`is_deleted = 1`). The row is
+kept so the audit trail / related data survives, but every subsequent request
+reports "Account doesn't exist". **Only deactivated accounts can delete**; the
+last active admin can never be deleted.
+
+**Responses**
+
+- `200` — `{ "data": { "deleted": true } }`
+- `400` — account is not deactivated, or it's the only remaining active admin
+- `401` — missing token, or account already deleted
 
 ---
 
