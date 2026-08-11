@@ -14,7 +14,7 @@ client/dist-ssr
 *.local
 
 _testing/
-server/data
+
 
 # Editor directories and files
 .vscode/*
