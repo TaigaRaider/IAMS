@@ -1,0 +1,125 @@
+.interview-page {
+  max-width: 1100px;
+}
+
+.request-card {
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  p {
+    margin: 0 0 18px;
+  }
+}
+
+.request-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: start;
+
+  .field {
+    margin-bottom: 0;
+  }
+}
+
+.interviewer-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--foreground);
+  font-size: 14px;
+
+  svg {
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  span {
+    overflow-wrap: anywhere;
+  }
+}
+
+.action-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.iv-btn {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground, #333);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--input-background);
+  }
+}
+
+.confirm-btn {
+  border-color: color-mix(in srgb, var(--success, #16a34a) 45%, transparent);
+  color: var(--success, #16a34a);
+
+  &:hover:not(:disabled) {
+    background: var(--success-bg, #ecfdf5);
+  }
+}
+
+.cancel-btn {
+  border-color: color-mix(in srgb, var(--danger, #dc2626) 45%, transparent);
+  color: var(--danger, #dc2626);
+
+  &:hover:not(:disabled) {
+    background: var(--danger-bg, #fef2f2);
+  }
+}
+
+.request-empty {
+  padding: 12px 14px;
+  background: var(--input-background);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .request-form {
+    grid-template-columns: 1fr;
+  }
+}

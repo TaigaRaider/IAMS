@@ -59,13 +59,14 @@ export const AuthForm = ({ mode }) => {
 
   return (
     <div className={`form ${isLogin ? "login-form" : "signup-form"}`}>
-      <h2>{isLogin ? "Welcome Back👋" : "Create your account"}</h2>
-      <p>
-        {isLogin
-          ? "Sign in to track your application"
-          : "Start your internship application"}
-      </p>
-      <form className="access-form" onSubmit={handleSubmit}>
+      <div className="form-card">
+        <h2>{isLogin ? "Welcome Back" : "Create your account"}</h2>
+        <p>
+          {isLogin
+            ? "Sign in to track your application"
+            : "Start your internship application"}
+        </p>
+        <form className="access-form" onSubmit={handleSubmit}>
         {!isLogin && (
           <>
             <label className="label username-label" htmlFor="full-name-field">
@@ -173,7 +174,8 @@ export const AuthForm = ({ mode }) => {
             )}
           </span>
         </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

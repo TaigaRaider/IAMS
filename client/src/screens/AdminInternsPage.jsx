@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, ShieldCheck } from "lucide-react";
+import { Plus, Trash2, ShieldCheck, GraduationCap } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
+import EmptyState from "../components/EmptyState.jsx";
 import "./AdminInternsPage.css";
 
 const initials = (name) =>
@@ -161,8 +162,11 @@ function AdminInternsPage() {
       {error && <p className="form-error">{error}</p>}
       <div className="card table-card">
         {interns.length === 0 ? (
-          <p>No interns yet — mark an application as “Hired” and the applicant
-          is promoted to intern automatically.</p>
+          <EmptyState
+            icon={GraduationCap}
+            title="No interns yet"
+            text='Mark an application as "Hired" and the applicant is promoted to intern automatically.'
+          />
         ) : (
           <table className="applicants-table intern-table">
             <thead>

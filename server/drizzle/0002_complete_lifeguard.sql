@@ -1,0 +1,1 @@
+ALTER TABLE `interviews` ADD `interviewer_id` integer REFERENCES users(id);

@@ -15,6 +15,13 @@
       "when": 1786227817651,
       "tag": "0001_concerned_cable",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786440390076,
+      "tag": "0002_complete_lifeguard",
+      "breakpoints": true
     }
   ]
 }

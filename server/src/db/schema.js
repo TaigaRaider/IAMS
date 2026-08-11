@@ -68,9 +68,12 @@ export const interviews = sqliteTable(
       .notNull()
       .references(() => applications.id),
     scheduled_at: text("scheduled_at").notNull(),
-    status: text("status", { enum: ["Pending", "Done", "Cancelled"] })
+    status: text("status", {
+      enum: ["Pending", "Confirmed", "Done", "Cancelled"],
+    })
       .notNull()
       .default("Pending"),
+    interviewer_id: integer("interviewer_id").references(() => users.id),
   },
 );
 

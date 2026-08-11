@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, Clock, X, Briefcase, FileText, UserCheck } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
+import EmptyState from "../components/EmptyState.jsx";
 import "./ApplicantPage.css";
 
 const STATUS_INFO = {
@@ -206,17 +207,28 @@ function ApplicantPage() {
               </div>
             </div>
           ) : (
-            <p>
-              You have not applied to any role yet — pick one below to get
-              started.
-            </p>
+            <EmptyState
+              icon={FileText}
+              title="No application yet"
+              text="Pick an open role below to get started."
+              compact
+            />
           )}
         </section>
 
         <section className="card roles-card">
           <h2>Open Roles</h2>
           <ul className="roles-list">
-            {roles.length === 0 && <li>No roles available right now.</li>}
+            {roles.length === 0 && (
+              <li>
+                <EmptyState
+                  icon={Briefcase}
+                  title="No roles available"
+                  text="Check back soon — new roles open regularly."
+                  compact
+                />
+              </li>
+            )}
             {roles
               .filter((role) => compare(role.status, "open"))
               .map((role) => (

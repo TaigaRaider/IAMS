@@ -1,10 +1,14 @@
 header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 12px 24px;
   background: var(--primary);
   color: var(--primary-foreground);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
 
   .menu-btn {
     display: flex;
@@ -64,6 +68,19 @@ header {
     }
   }
 
+  .avatar-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    line-height: 0;
+    transition: transform 0.15s ease;
+
+    &:hover {
+      transform: scale(1.06);
+    }
+  }
+
   .avatar {
     width: 38px;
     height: 38px;
@@ -72,24 +89,6 @@ header {
     background: var(--primary-foreground);
     object-fit: cover;
     cursor: pointer;
-  }
-
-  .logout-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--primary-foreground);
-    cursor: pointer;
-    transition: background 0.15s ease;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
   }
 }
 
@@ -103,11 +102,17 @@ header {
 }
 
 .sidebar {
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
   width: 220px;
   flex-shrink: 0;
   background: var(--card-background);
   border-right: 1px solid var(--border);
   padding: 20px 12px;
+  overflow-y: auto;
   transition: width 0.2s ease;
 
   &.collapsed {
@@ -124,9 +129,26 @@ header {
   }
 
   nav {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .sidebar-footer {
+    flex: none;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+
+    .logout-btn {
+      color: var(--danger);
+
+      &:hover {
+        background: var(--danger-bg);
+        color: var(--danger);
+      }
+    }
   }
 
   .nav-item {
