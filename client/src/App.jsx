@@ -3,23 +3,11 @@ import AdminDashboard from "./screens/AdminDashboard.jsx";
 import ApplicantDashboard from "./components/ApplicantDashboard.jsx";
 import InternDashboard from "./components/InternDashboard.jsx";
 import { AuthPage } from "./screens/AuthPage";
+import { IntroPage } from "./screens/IntroPage.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
 import ProfilePage from "./components/ProfilePage.jsx";
-import { getSession } from "./api";
 import "./App.css";
 import "./shared.css";
-
-const HOME_BY_ROLE = {
-  admin: "/dashboard",
-  applicant: "/applicant",
-  intern: "/intern",
-};
-
-
-function Home() {
-  const session = getSession();
-  return <Navigate to={HOME_BY_ROLE[session?.role] ?? "/login"} replace />;
-}
 
 function Guarded({ roles, children }) {
   return <RequireAuth roles={roles}>{children}</RequireAuth>;
@@ -28,7 +16,7 @@ function Guarded({ roles, children }) {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<IntroPage />} />
       <Route path="/signup" element={<AuthPage mode="signup" />} />
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route
@@ -63,7 +51,7 @@ function App() {
           </Guarded>
         }
       />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
