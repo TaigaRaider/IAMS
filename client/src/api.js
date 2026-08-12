@@ -1,6 +1,7 @@
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
 const SESSION_KEY = "iams_session";
 const MAX_RETRIES = 2;
+const FETCH_TIMEOUT_MS = 15_000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -18,12 +19,17 @@ export async function api(path, { method = "GET", body } = {}) {
   }
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // Never let a hung proxy/server leave the page on an infinite spinner —
+    // abort and treat it as a transient failure so the retry/auth guards kick in.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
       const res = await fetch(BASE + path, {
         method,
         headers,
         credentials: "omit",
         body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
       });
 
       const json = await res.json().catch(() => ({}));
@@ -40,12 +46,23 @@ export async function api(path, { method = "GET", body } = {}) {
       }
       return json.data;
     } catch (err) {
-      // Network-level failure (Turso connect timeouts surface as fetch errors).
-      if (attempt < MAX_RETRIES && err instanceof TypeError) {
+      // Network-level failure (Turso connect timeouts surface as fetch errors)
+      // or a timed-out fetch — both are transient.
+      if (
+        attempt < MAX_RETRIES &&
+        (err instanceof TypeError || err?.name === "AbortError")
+      ) {
         await sleep(300 * (attempt + 1));
         continue;
       }
+      if (err?.name === "AbortError") {
+        const timedOut = new Error("The server took too long to respond. Please try again.");
+        timedOut.status = 0;
+        throw timedOut;
+      }
       throw err;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 }
