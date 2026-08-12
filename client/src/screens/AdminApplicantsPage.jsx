@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FileText } from "lucide-react";
 import { api, logout } from "../api";
 import EmptyState from "../components/EmptyState.jsx";
+import "./AdminApplicantsPage.css";
 
 const STATUSES = ["In Review", "Shortlisted", "Rejected", "Hired"];
 
@@ -30,8 +31,11 @@ function statusClass(status) {
 function ApplicantsPage() {
   const navigate = useNavigate();
   const [applicants, setApplicants] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
 
   const handleUnauthorized = useCallback((err) => {
     if (String(err.message).includes("token") || String(err.message).includes("401")) {
@@ -45,8 +49,12 @@ function ApplicantsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await api("/applications");
-        setApplicants(data);
+        const [appData, roleData] = await Promise.all([
+          api("/applications"),
+          api("/roles"),
+        ]);
+        setApplicants(appData);
+        setRoles(roleData);
       } catch (err) {
         if (!handleUnauthorized(err)) setError(err.message);
       }
@@ -71,16 +79,54 @@ function ApplicantsPage() {
     }
   };
 
+  const filtered = applicants.filter(
+    (a) =>
+      (!statusFilter || a.status === statusFilter) &&
+      (!roleFilter || String(a.role_id) === roleFilter),
+  );
+
   return (
     <div className="page">
       <h1 className="page-title">Applicants</h1>
       {error && <p className="form-error">{error}</p>}
+      {applicants.length > 0 && (
+        <div className="filters-row">
+          <select
+            className="status-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All statuses</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <select
+            className="status-select"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+          >
+            <option value="">All roles</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="card table-card">
-        {applicants.length === 0 ? (
+        {filtered.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="No applications yet"
-            text="Applications will appear here once candidates apply."
+            title={applicants.length === 0 ? "No applications yet" : "No matches"}
+            text={
+              applicants.length === 0
+                ? "Applications will appear here once candidates apply."
+                : "No applicants match the selected filters."
+            }
           />
         ) : (
           <table className="applicants-table">
@@ -94,7 +140,7 @@ function ApplicantsPage() {
               </tr>
             </thead>
             <tbody>
-              {applicants.map((a) => (
+              {filtered.map((a) => (
                 <tr key={a.id}>
                   <td>
                     <div className="applicant-cell">

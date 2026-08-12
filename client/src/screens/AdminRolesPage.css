@@ -1,0 +1,39 @@
+.roles-table-card {
+  margin-bottom: 24px;
+}
+
+.role-desc {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.role-applicants {
+  .applicant-count {
+    display: inline-block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+
+    .status {
+      flex: none;
+    }
+  }
+}
