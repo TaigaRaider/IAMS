@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, ShieldCheck, GraduationCap } from "lucide-react";
 import { api, logout } from "../api";
-import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
 import "./AdminInternsPage.css";
 
@@ -93,6 +92,7 @@ function AdminInternsPage() {
   const navigate = useNavigate();
   const [interns, setInterns] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [error, setError] = useState("");
   const [promoting, setPromoting] = useState(null);
 
@@ -110,12 +110,14 @@ function AdminInternsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [internData, taskData] = await Promise.all([
+      const [internData, taskData, offerData] = await Promise.all([
         api("/interns"),
         api("/interns/tasks"),
+        api("/offers"),
       ]);
       setInterns(internData);
       setTasks(taskData);
+      setOffers(offerData);
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     }
@@ -156,112 +158,98 @@ function AdminInternsPage() {
   const tasksByIntern = (internId) =>
     tasks.filter((t) => Number(t.intern_id) === Number(internId));
 
+  const offerCountFor = (internId) =>
+    offers.filter((o) => Number(o.applicant_id) === Number(internId)).length;
+
   return (
     <div className="page">
       <h1 className="page-title">Interns</h1>
       {error && <p className="form-error">{error}</p>}
-      <div className="card table-card">
-        {interns.length === 0 ? (
+      {interns.length === 0 ? (
+        <div className="card">
           <EmptyState
             icon={GraduationCap}
             title="No interns yet"
             text='Mark an application as "Hired" and the applicant is promoted to intern automatically.'
           />
-        ) : (
-          <table className="applicants-table intern-table">
-            <thead>
-              <tr>
-                <th>Intern</th>
-                <th>Role / Department</th>
-                <th>Offer</th>
-                <th>Progress</th>
-                <th>Tasks</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {interns.map((intern) => {
-                const internTasks = tasksByIntern(intern.id);
-                return (
-                  <tr key={intern.id}>
-                    <td>
-                      <div className="applicant-cell">
-                        <div className="avatar-mini">{initials(intern.full_name)}</div>
-                        <strong>{intern.full_name}</strong>
-                      </div>
-                    </td>
-                    <td>
-                      <strong>{intern.role_title ?? "—"}</strong>
-                      <span className="muted-cell">{intern.department ?? ""}</span>
-                    </td>
-                    <td>
-                      <span
-                        className={`status ${
-                          compare(intern.offer_status, "Accepted")
-                            ? "accepted"
-                            : compare(intern.offer_status, "Declined")
-                              ? "rejected"
-                              : "pending"
-                        }`}
-                      >
-                        {intern.offer_status ?? "—"}
+        </div>
+      ) : (
+        <div className="intern-cards">
+          {interns.map((intern) => {
+            const internTasks = tasksByIntern(intern.id);
+            const offerCount = offerCountFor(intern.id);
+            return (
+              <article className="intern-block" key={intern.id}>
+                <div className="intern-block-head">
+                  <div className="applicant-cell">
+                    <div className="avatar-mini">{initials(intern.full_name)}</div>
+                    <div className="intern-identity">
+                      <strong>{intern.full_name}</strong>
+                      <span className="muted-cell">
+                        {intern.role_title ?? "—"}
+                        {intern.department ? ` · ${intern.department}` : ""}
                       </span>
-                    </td>
-                    <td>
-                      <div className="progress-cell">
-                        <div className="bar">
-                          <div style={{ width: `${intern.progress}%` }}></div>
-                        </div>
-                        <span>
-                          {intern.tasks_done}/{intern.tasks_total}
+                    </div>
+                  </div>
+                  <span
+                    className={`status ${offerCount > 0 ? "accepted" : "pending"}`}
+                  >
+                    {offerCount === 0
+                      ? "None"
+                      : `${offerCount} offer${offerCount > 1 ? "s" : ""}`}
+                  </span>
+                </div>
+
+                <div className="intern-block-meta">
+                  <div className="progress-cell">
+                    <div className="bar">
+                      <div style={{ width: `${intern.progress}%` }}></div>
+                    </div>
+                    <span>
+                      {intern.tasks_done}/{intern.tasks_total}
+                    </span>
+                  </div>
+                  <button
+                    className="promote-btn"
+                    onClick={() => promoteAdmin(intern)}
+                    disabled={promoting === intern.id}
+                  >
+                    <ShieldCheck size={14} />{" "}
+                    {promoting === intern.id ? "Promoting..." : "Make admin"}
+                  </button>
+                </div>
+
+                <div className="intern-tasks">
+                  <h3>Tasks</h3>
+                  <ul className="task-list">
+                    {internTasks.length === 0 && (
+                      <li className="muted-cell">No tasks assigned</li>
+                    )}
+                    {internTasks.map((task) => (
+                      <li key={task.id}>
+                        <span
+                          className={`status ${TASK_STATUS_CLASS[task.status] ?? "pending"}`}
+                        >
+                          {task.status.replace("_", " ")}
                         </span>
-                      </div>
-                    </td>
-                    <td>
-                      <ul className="task-list">
-                        {internTasks.length === 0 && (
-                          <li className="muted-cell">No tasks assigned</li>
-                        )}
-                        {internTasks.map((task) => (
-                          <li key={task.id}>
-                            <span
-                              className={`status ${TASK_STATUS_CLASS[task.status] ?? "pending"}`}
-                            >
-                              {task.status.replace("_", " ")}
-                            </span>
-                            <span className="task-name">{task.title}</span>
-                            <button
-                              className="icon-btn"
-                              onClick={() => deleteTask(task.id)}
-                              aria-label={`Delete task ${task.title}`}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                      <AssignTaskForm
-                        intern={intern}
-                        onCreated={load}
-                      />
-                    </td>
-                    <td>
-                      <button
-                        className="promote-btn"
-                        onClick={() => promoteAdmin(intern)}
-                        disabled={promoting === intern.id}
-                      >
-                        <ShieldCheck size={14} />{" "}
-                        {promoting === intern.id ? "Promoting..." : "Make admin"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+                        <span className="task-name">{task.title}</span>
+                        <button
+                          className="icon-btn"
+                          onClick={() => deleteTask(task.id)}
+                          aria-label={`Delete task ${task.title}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <AssignTaskForm intern={intern} onCreated={load} />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

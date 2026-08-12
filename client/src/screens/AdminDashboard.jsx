@@ -1,10 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Link, Routes, Route, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
   Briefcase,
-  Plus,
   FileText,
   CalendarClock,
   BadgeCheck,
@@ -20,6 +19,8 @@ import DashboardShell from "../components/DashboardShell.jsx";
 import InterviewPage from "../components/InterviewPage.jsx";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 import AdminInternsPage from "./AdminInternsPage.jsx";
+import AdminRolesPage from "./AdminRolesPage.jsx";
+import AdminOffersPage from "./AdminOffersPage.jsx";
 import "./AdminDashboard.css";
 
 const ADMIN_NAV = [
@@ -27,7 +28,8 @@ const ADMIN_NAV = [
   { to: "/dashboard/applicants", icon: Users, label: "Applicants" },
   { to: "/dashboard/interns", icon: GraduationCap, label: "Interns" },
   { to: "/dashboard/interviews", icon: CalendarClock, label: "Interviews" },
-  { to: "/dashboard/offers", icon: Briefcase, label: "Offers" },
+  { to: "/dashboard/roles", icon: Briefcase, label: "Roles" },
+  { to: "/dashboard/offers", icon: BadgeCheck, label: "Offers" },
   { to: "/profile", icon: UserRound, label: "Profile" },
 ];
 
@@ -187,129 +189,6 @@ function Overview() {
   );
 }
 
-function OffersPage() {
-  const navigate = useNavigate();
-  const [offers, setOffers] = useState([]);
-  const [error, setError] = useState("");
-  const [updating, setUpdating] = useState(null);
-
-  const handleUnauthorized = useCallback((err) => {
-    if (String(err.message).includes("token") || String(err.message).includes("401")) {
-      logout();
-      navigate("/login", { replace: true });
-      return true;
-    }
-    return false;
-  }, [navigate]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api("/offers");
-        setOffers(data);
-      } catch (err) {
-        if (!handleUnauthorized(err)) setError(err.message);
-      }
-    })();
-  }, [handleUnauthorized]);
-
-  const changeStatus = async (id, status) => {
-    setUpdating(id);
-    setError("");
-    try {
-      await api(`/offers/${id}/status`, {
-        method: "PATCH",
-        body: { status },
-      });
-      setOffers((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status } : o)),
-      );
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  return (
-    <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">Offers</h1>
-        <Link to="/dashboard/add" className="add-btn">
-          <Plus size={16} />
-          Add Role
-        </Link>
-      </div>
-      {error && <p className="form-error">{error}</p>}
-      <div className="card table-card">
-        {offers.length === 0 ? (
-          <EmptyState
-            icon={BadgeCheck}
-            title="No offers extended yet"
-            text="Offers you extend to applicants will appear here."
-          />
-        ) : (
-          <table className="applicants-table">
-            <thead>
-              <tr>
-                <th>Applicant</th>
-                <th>Status</th>
-                <th>Extended On</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {offers.map((o) => (
-                <tr key={o.id}>
-                  <td>
-                    <div className="applicant-cell">
-                      <div className="avatar-mini">
-                        {(o.applicant_name ?? "?")
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </div>
-                      <strong>{o.applicant_name}</strong>
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      className={`status ${
-                        compare(o.status, "Accepted")
-                          ? "accepted"
-                          : compare(o.status, "Declined")
-                            ? "rejected"
-                            : "pending"
-                      }`}
-                    >
-                      {o.status}
-                    </span>
-                  </td>
-                  <td>{o.created_at}</td>
-                  <td>
-                    <select
-                      className="status-select"
-                      value={o.status}
-                      disabled={updating === o.id}
-                      onChange={(e) => changeStatus(o.id, e.target.value)}
-                    >
-                      <option value="Extended">Extended</option>
-                      <option value="Accepted">Accepted</option>
-                      <option value="Declined">Declined</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function AddRolePage() {
   return (
     <div className="page">
@@ -327,7 +206,8 @@ function AdminDashboard() {
         <Route path="applicants" element={<AdminApplicantsPage />} />
         <Route path="interns" element={<AdminInternsPage />} />
         <Route path="interviews" element={<InterviewPage />} />
-        <Route path="offers" element={<OffersPage />} />
+        <Route path="roles" element={<AdminRolesPage />} />
+        <Route path="offers" element={<AdminOffersPage />} />
         <Route path="add" element={<AddRolePage />} />
       </Routes>
     </DashboardShell>

@@ -1,0 +1,30 @@
+.roles-table-card {
+  margin-bottom: 24px;
+}
+
+.section-head {
+  padding: 20px 24px 0;
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  p {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+}
+
+.offer-role-select {
+  max-width: 220px;
+}
+
+@media (max-width: 600px) {
+  .section-head {
+    padding: 16px 16px 0;
+  }
+}
