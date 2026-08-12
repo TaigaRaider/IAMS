@@ -48,7 +48,9 @@ const jsonError = (message) => (_req, res) =>
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 600,
+  // Dev defaults are low because the dashboard fires several requests per
+  // mount (StrictMode doubles them); let deployment tune it via env.
+  limit: Number(process.env.API_RATE_LIMIT ?? 3000),
   standardHeaders: "draft-8",
   legacyHeaders: false,
   handler: jsonError("Too many requests. Please try again later."),

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, Clock, X, Briefcase, FileText, UserCheck } from "lucide-react";
 import { api, logout } from "../api";
@@ -82,11 +82,17 @@ function ApplicantPage() {
 
   // Once the admin confirms the accepted offer the account becomes an intern,
   // so the /applicant guard will redirect to /intern on the next load. Refresh
-  // when the tab regains focus to pick that up.
+  // when the tab regains focus to pick that up. Throttled so rapid tab
+  // switching can't hammer the API (each refetch re-pulls 3 endpoints).
+  const MIN_REFETCH_INTERVAL = 10_000;
+  const lastRefetchRef = useRef(0);
   useEffect(() => {
     let reloading = false;
     const onActive = async () => {
       if (document.visibilityState !== "visible" || reloading) return;
+      const now = Date.now();
+      if (now - lastRefetchRef.current < MIN_REFETCH_INTERVAL) return;
+      lastRefetchRef.current = now;
       const offersRefreshed = await loadAll();
       if (offersRefreshed.some((o) => compare(o.status, "Confirmed"))) {
         reloading = true;

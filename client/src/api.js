@@ -34,7 +34,9 @@ export async function api(path, { method = "GET", body } = {}) {
           await sleep(300 * (attempt + 1));
           continue;
         }
-        throw new Error(json.error || `Request failed (${res.status})`);
+        const err = new Error(json.error || `Request failed (${res.status})`);
+        err.status = res.status;
+        throw err;
       }
       return json.data;
     } catch (err) {
