@@ -11,7 +11,7 @@ import "./IntroPage.css";
 
 const INTERNS = [
   {
-    name: "Timothy Adetunji Ojo",
+    name:  "Adetunji Timothy Ojo",
     role: "Intern · Crown Interactive",
     photo: null,
   },
