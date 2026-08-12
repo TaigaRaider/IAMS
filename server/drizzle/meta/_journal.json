@@ -29,6 +29,13 @@
       "when": 1786458067544,
       "tag": "0003_whole_sentry",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786526046733,
+      "tag": "0004_brainy_exodus",
+      "breakpoints": true
     }
   ]
 }

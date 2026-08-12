@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { BadgeCheck, Send } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { BadgeCheck, Send, Eye, PenLine, Flag, RotateCcw } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
+import ConfirmHireDialog from "../components/ConfirmHireDialog.jsx";
 import { Skeleton, TableSkeleton } from "../components/Skeletons.jsx";
 import "./AdminOffersPage.css";
-
-const OFFER_STATUSES = ["Extended", "Accepted", "Declined"];
 
 const initials = (name) =>
   (name ?? "?")
@@ -17,20 +16,28 @@ const initials = (name) =>
     .slice(0, 2)
     .toUpperCase();
 
-function OfferRoles({ applications, roles, offers, offering, selections, onSelect, onOffer }) {
+const STATUS_CLASS = {
+  Draft: "pending",
+  Extended: "pending",
+  "In Negotiation": "shortlisted",
+  Final: "pending",
+  Accepted: "accepted",
+  Confirmed: "accepted",
+  Declined: "rejected",
+};
+
+function OfferRoles({ applications, roles, offers }) {
   const shortlisted = applications.filter((a) => compare(a.status, "Shortlisted"));
-  const offersByApplication = new Map(
-    offers.map((o) => [Number(o.application_id), o]),
-  );
+  const offered = new Map(offers.map((o) => [Number(o.application_id), o]));
   const openRoles = roles.filter((r) => compare(r.status, "open"));
 
   return (
     <div className="card table-card roles-table-card">
       <div className="section-head">
-        <h2>Offer a Role</h2>
+        <h2>Offer a role</h2>
         <p>
-          Give shortlisted applicants a role different from the one they applied
-          for.
+          Draft an offer for a shortlisted applicant. You can offer a different
+          role from the one they applied for.
         </p>
       </div>
       {shortlisted.length === 0 ? (
@@ -45,24 +52,17 @@ function OfferRoles({ applications, roles, offers, offering, selections, onSelec
             <tr>
               <th>Applicant</th>
               <th>Applied For</th>
-              <th>Offer Role</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {shortlisted.map((app) => {
-              const already = offersByApplication.get(Number(app.id));
-              const offeredRoleId = selections[app.id] ?? "";
-              const eligibleRoles = openRoles.filter(
-                (r) => Number(r.id) !== Number(app.role_id),
-              );
+              const already = offered.get(Number(app.id));
               return (
                 <tr key={app.id}>
                   <td>
                     <div className="applicant-cell">
-                      <div className="avatar-mini">
-                        {initials(app.applicant_name)}
-                      </div>
+                      <div className="avatar-mini">{initials(app.applicant_name)}</div>
                       <strong>{app.applicant_name}</strong>
                     </div>
                   </td>
@@ -71,34 +71,18 @@ function OfferRoles({ applications, roles, offers, offering, selections, onSelec
                   </td>
                   <td>
                     {already ? (
-                      <span className="status accepted">Offered</span>
-                    ) : eligibleRoles.length === 0 ? (
-                      <span className="muted-cell">No other open roles</span>
+                      <span className="status accepted">
+                        {already.status === "Draft" ? "Drafted" : "Offered"}
+                      </span>
+                    ) : openRoles.length === 0 ? (
+                      <span className="muted-cell">No open roles</span>
                     ) : (
-                      <select
-                        className="status-select offer-role-select"
-                        value={offeredRoleId}
-                        onChange={(e) => onSelect(app.id, e.target.value)}
-                      >
-                        <option value="">Select a role…</option>
-                        {eligibleRoles.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.title} · {r.department}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </td>
-                  <td>
-                    {!already && eligibleRoles.length > 0 && (
-                      <button
+                      <Link
                         className="apply-btn"
-                        disabled={offering === app.id || !offeredRoleId}
-                        onClick={() => onOffer(app.id)}
+                        to={`/dashboard/offers/new?application=${app.id}`}
                       >
-                        <Send size={14} />
-                        {offering === app.id ? "Offering..." : "Offer"}
-                      </button>
+                        <PenLine size={14} /> Draft
+                      </Link>
                     )}
                   </td>
                 </tr>
@@ -111,25 +95,67 @@ function OfferRoles({ applications, roles, offers, offering, selections, onSelec
   );
 }
 
-function OffersList({ applications, offers, updating, onChangeStatus }) {
-  const appById = new Map(
-    applications.map((a) => [Number(a.id), a]),
-  );
+function OfferRowActions({ offer, busyId, onAction }) {
+  if (compare(offer.status, "Draft")) {
+    return (
+      <button
+        className="apply-btn"
+        disabled={busyId === offer.id}
+        onClick={() => onAction("extend", offer)}
+      >
+        <Send size={14} />
+        {busyId === offer.id ? "Extending…" : "Extend"}
+      </button>
+    );
+  }
+  if (["Extended", "In Negotiation"].includes(offer.status)) {
+    return (
+      <Link className="apply-btn" to={`/dashboard/offers/${offer.id}`}>
+        <Flag size={14} /> Respond
+      </Link>
+    );
+  }
+  if (compare(offer.status, "Accepted")) {
+    return (
+      <button className="apply-btn" onClick={() => onAction("confirm", offer)}>
+        <BadgeCheck size={14} /> Confirm Hire
+      </button>
+    );
+  }
+  if (compare(offer.status, "Declined")) {
+    return (
+      <Link className="apply-btn" to={`/dashboard/offers/${offer.id}`}>
+        <RotateCcw size={14} /> Re-offer
+      </Link>
+    );
+  }
+  if (compare(offer.status, "Final") || compare(offer.status, "Confirmed")) {
+    return (
+      <Link className="btn-ghost" to={`/dashboard/offers/${offer.id}`}>
+        <Eye size={14} /> View
+      </Link>
+    );
+  }
+  return null;
+}
+
+function OffersList({ applications, offers, busyId, onAction }) {
+  const appById = new Map(applications.map((a) => [Number(a.id), a]));
 
   return (
     <div className="card table-card roles-table-card">
       <div className="section-head">
         <h2>Offers</h2>
         <p>
-          Track every role offered to shortlisted applicants. An applicant can
-          hold more than one offer.
+          Drafts are only visible to you. Extended offers can be negotiated; an
+          accepted offer waits for your final confirmation.
         </p>
       </div>
       {offers.length === 0 ? (
         <EmptyState
           icon={BadgeCheck}
           title="No offers yet"
-          text="Offer a role above and it will appear here."
+          text="Draft an offer for a shortlisted applicant above and it will appear here."
         />
       ) : (
         <table className="applicants-table">
@@ -138,6 +164,7 @@ function OffersList({ applications, offers, updating, onChangeStatus }) {
               <th>Applicant</th>
               <th>Applied For</th>
               <th>Status</th>
+              <th>Compensation</th>
               <th>Extended On</th>
               <th></th>
             </tr>
@@ -145,44 +172,29 @@ function OffersList({ applications, offers, updating, onChangeStatus }) {
           <tbody>
             {offers.map((offer) => {
               const appliedRole = appById.get(Number(offer.application_id));
+              const rev = offer.current_revision;
               return (
                 <tr key={offer.id}>
                   <td>
                     <div className="applicant-cell">
-                      <div className="avatar-mini">
-                        {initials(offer.applicant_name)}
-                      </div>
+                      <div className="avatar-mini">{initials(offer.applicant_name)}</div>
                       <strong>{offer.applicant_name}</strong>
                     </div>
                   </td>
                   <td>{appliedRole?.role_title ?? "—"}</td>
                   <td>
-                    <span
-                      className={`status ${
-                        compare(offer.status, "Accepted")
-                          ? "accepted"
-                          : compare(offer.status, "Declined")
-                            ? "rejected"
-                            : "pending"
-                      }`}
-                    >
+                    <span className={`status ${STATUS_CLASS[offer.status] ?? "pending"}`}>
                       {offer.status}
                     </span>
                   </td>
+                  <td>{rev?.compensation ?? "—"}</td>
                   <td>{offer.created_at}</td>
                   <td>
-                    <select
-                      className="status-select"
-                      value={offer.status}
-                      disabled={updating === offer.id}
-                      onChange={(e) => onChangeStatus(offer.id, e.target.value)}
-                    >
-                      {OFFER_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                    <OfferRowActions
+                      offer={offer}
+                      busyId={busyId}
+                      onAction={onAction}
+                    />
                   </td>
                 </tr>
               );
@@ -201,9 +213,8 @@ function AdminOffersPage() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [offering, setOffering] = useState(null);
-  const [updating, setUpdating] = useState(null);
-  const [selections, setSelections] = useState({});
+  const [busyId, setBusyId] = useState(null);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -235,58 +246,47 @@ function AdminOffersPage() {
   }, [handleUnauthorized]);
 
   useEffect(() => {
-    (async () => {
-      await load();
-    })();
+    (async () => await load())();
   }, [load]);
 
-  const offerRole = async (applicationId) => {
-    const roleId = selections[applicationId];
-    if (!roleId) {
-      setError("Pick a role to offer first.");
-      return;
-    }
-    setOffering(applicationId);
+  const extend = async (offer) => {
+    setBusyId(offer.id);
     setError("");
     try {
-      await api("/offers", {
-        method: "POST",
-        body: {
-          application_id: Number(applicationId),
-          role_id: Number(roleId),
-        },
-      });
+      await api(`/offers/${offer.id}/extend`, { method: "POST" });
       await load();
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
-      setOffering(null);
+      setBusyId(null);
     }
   };
 
-  const changeOfferStatus = async (id, status) => {
-    setUpdating(id);
+  const confirmHire = async () => {
+    if (!confirmTarget) return;
+    setBusyId(confirmTarget.id);
     setError("");
     try {
-      await api(`/offers/${id}/status`, {
-        method: "PATCH",
-        body: { status },
-      });
-      setOffers((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status } : o)),
-      );
+      await api(`/offers/${confirmTarget.id}/confirm`, { method: "POST" });
+      setConfirmTarget(null);
+      await load();
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
-      setUpdating(null);
+      setBusyId(null);
     }
+  };
+
+  const onAction = (action, offer) => {
+    if (action === "extend") extend(offer);
+    if (action === "confirm") setConfirmTarget(offer);
   };
 
   if (loading) {
     return (
       <div className="page">
         <Skeleton width="180px" height="28px" />
-        <TableSkeleton rows={4} />
+        <TableSkeleton rows={3} />
       </div>
     );
   }
@@ -296,23 +296,22 @@ function AdminOffersPage() {
       <h1 className="page-title">Offers</h1>
       {error && <p className="form-error">{error}</p>}
 
-      <OfferRoles
-        applications={applications}
-        roles={roles}
-        offers={offers}
-        offering={offering}
-        selections={selections}
-        onSelect={(applicationId, roleId) =>
-          setSelections((prev) => ({ ...prev, [applicationId]: roleId }))
-        }
-        onOffer={offerRole}
-      />
+      <OfferRoles applications={applications} roles={roles} offers={offers} />
 
       <OffersList
         applications={applications}
         offers={offers}
-        updating={updating}
-        onChangeStatus={changeOfferStatus}
+        busyId={busyId}
+        onAction={onAction}
+      />
+
+      <ConfirmHireDialog
+        open={Boolean(confirmTarget)}
+        offer={confirmTarget}
+        busy={busyId === confirmTarget?.id}
+        error={error}
+        onCancel={() => setConfirmTarget(null)}
+        onConfirm={confirmHire}
       />
     </div>
   );

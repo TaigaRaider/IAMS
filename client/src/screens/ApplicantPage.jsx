@@ -43,6 +43,10 @@ function ApplicantPage() {
   const [error, setError] = useState("");
   const [applying, setApplying] = useState(null);
   const [accepting, setAccepting] = useState(false);
+  const [declining, setDeclining] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestMessage, setRequestMessage] = useState("");
 
   const handleUnauthorized = useCallback((err) => {
     if (String(err.message).includes("token") || String(err.message).includes("401")) {
@@ -53,22 +57,49 @@ function ApplicantPage() {
     return false;
   }, [navigate]);
 
+  const loadAll = useCallback(async () => {
+    try {
+      const [apps, offerData, roleData] = await Promise.all([
+        api("/applications"),
+        api("/offers"),
+        api("/roles"),
+      ]);
+      setApplications(apps);
+      setOffers(offerData);
+      setRoles(roleData);
+      return offerData;
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+      return [];
+    }
+  }, [handleUnauthorized]);
+
   useEffect(() => {
     (async () => {
-      try {
-        const [apps, offerData, roleData] = await Promise.all([
-          api("/applications"),
-          api("/offers"),
-          api("/roles"),
-        ]);
-        setApplications(apps);
-        setOffers(offerData);
-        setRoles(roleData);
-      } catch (err) {
-        if (!handleUnauthorized(err)) setError(err.message);
-      }
+      await loadAll();
     })();
-  }, [handleUnauthorized]);
+  }, [loadAll]);
+
+  // Once the admin confirms the accepted offer the account becomes an intern,
+  // so the /applicant guard will redirect to /intern on the next load. Refresh
+  // when the tab regains focus to pick that up.
+  useEffect(() => {
+    let reloading = false;
+    const onActive = async () => {
+      if (document.visibilityState !== "visible" || reloading) return;
+      const offersRefreshed = await loadAll();
+      if (offersRefreshed.some((o) => compare(o.status, "Confirmed"))) {
+        reloading = true;
+        window.location.reload();
+      }
+    };
+    window.addEventListener("focus", onActive);
+    document.addEventListener("visibilitychange", onActive);
+    return () => {
+      window.removeEventListener("focus", onActive);
+      document.removeEventListener("visibilitychange", onActive);
+    };
+  }, [loadAll]);
 
   const latest = applications[0] ?? null;
   const current = latest ? STATUS_INFO[latest.status] ?? STATUS_INFO["In Review"] : null;
@@ -105,11 +136,51 @@ function ApplicantPage() {
           o.id === latestOffer.id ? { ...o, status: "Accepted" } : o,
         ),
       );
-      navigate("/intern", { replace: true });
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
       setAccepting(false);
+    }
+  };
+
+  const declineOffer = async () => {
+    if (!latestOffer) return;
+    setDeclining(true);
+    setError("");
+    try {
+      await api(`/offers/${latestOffer.id}/decline`, { method: "POST" });
+      setOffers((prev) =>
+        prev.map((o) =>
+          o.id === latestOffer.id ? { ...o, status: "Declined" } : o,
+        ),
+      );
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setDeclining(false);
+    }
+  };
+
+  const requestChanges = async () => {
+    if (!latestOffer || !requestMessage.trim()) return;
+    setRequesting(true);
+    setError("");
+    try {
+      await api(`/offers/${latestOffer.id}/request-changes`, {
+        method: "POST",
+        body: { message: requestMessage.trim() },
+      });
+      setOffers((prev) =>
+        prev.map((o) =>
+          o.id === latestOffer.id ? { ...o, status: "In Negotiation" } : o,
+        ),
+      );
+      setRequestMessage("");
+      setRequestOpen(false);
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setRequesting(false);
     }
   };
 
@@ -145,45 +216,180 @@ function ApplicantPage() {
         <section className="card offer-card">
           <div className="card-head">
             <h2>Job Offer</h2>
-            {compare(latestOffer.status, "Rejected") || compare(latestOffer.status, "Accepted") ? (
-              <span
-                className={`status ${
-                  compare(latestOffer.status, "Accepted") ? "accepted" : "rejected"
-                }`}
-              >
-                {latestOffer.status}
-              </span>
-            ) : (
-              <span className="status pending">{latestOffer.status}</span>
-            )}
+            <span
+              className={`status ${
+                compare(latestOffer.status, "Accepted") ||
+                compare(latestOffer.status, "Confirmed")
+                  ? "accepted"
+                  : compare(latestOffer.status, "Declined")
+                    ? "rejected"
+                    : "pending"
+              }`}
+            >
+              {latestOffer.status}
+            </span>
           </div>
+
+          {latestOffer.current_revision && (
+            <div className="offer-terms">
+              <div className="term-line">
+                <span className="term-label">Position</span>
+                <strong className="term-value">
+                  {latestOffer.current_revision.position_title ?? latest.role_title}
+                </strong>
+              </div>
+              <div className="term-line">
+                <span className="term-label">Compensation</span>
+                <strong className="term-value">
+                  {latestOffer.current_revision.compensation}
+                </strong>
+              </div>
+              {latestOffer.current_revision.duration && (
+                <div className="term-line">
+                  <span className="term-label">Duration</span>
+                  <strong className="term-value">
+                    {latestOffer.current_revision.duration}
+                  </strong>
+                </div>
+              )}
+              {latestOffer.current_revision.start_date && (
+                <div className="term-line">
+                  <span className="term-label">Start date</span>
+                  <strong className="term-value">
+                    {latestOffer.current_revision.start_date}
+                  </strong>
+                </div>
+              )}
+              {latestOffer.current_revision.expiry_date && (
+                <div className="term-line">
+                  <span className="term-label">Respond by</span>
+                  <strong className="term-value">
+                    {latestOffer.current_revision.expiry_date}
+                  </strong>
+                </div>
+              )}
+              <div className="term-section">
+                <span className="term-label">Task narration</span>
+                <p>{latestOffer.current_revision.narration}</p>
+              </div>
+              <div className="term-section">
+                <span className="term-label">Limitations &amp; expectations</span>
+                <p>{latestOffer.current_revision.terms}</p>
+              </div>
+            </div>
+          )}
+
           {compare(latestOffer.status, "Extended") && (
             <>
               <p>
-                Congratulations! An offer has been extended for{" "}
-                <strong>{latest.role_title}</strong>. Accept it to become an
-                intern and continue to your intern dashboard.
+                An offer has been extended for <strong>{latest.role_title}</strong>.
+                Review the terms above. You can accept, decline, or request
+                changes before deciding.
               </p>
-              <button
-                className="apply-btn"
-                onClick={acceptOffer}
-                disabled={accepting}
-              >
-                {accepting ? "Accepting..." : "Accept Offer"}
-              </button>
+              <div className="offer-actions">
+                <button className="apply-btn" onClick={acceptOffer} disabled={accepting}>
+                  {accepting ? "Accepting..." : "Accept Offer"}
+                </button>
+                <button
+                  className="btn-ghost"
+                  onClick={() => setRequestOpen((v) => !v)}
+                  disabled={accepting || declining}
+                >
+                  Request changes
+                </button>
+                <button
+                  className="btn-ghost"
+                  onClick={declineOffer}
+                  disabled={accepting || declining}
+                >
+                  {declining ? "Declining..." : "Decline"}
+                </button>
+              </div>
+              {requestOpen && (
+                <div className="request-box">
+                  <textarea
+                    className="field"
+                    rows={3}
+                    value={requestMessage}
+                    onChange={(e) => setRequestMessage(e.target.value)}
+                    placeholder="Tell the team what you'd like reviewed or changed…"
+                  />
+                  <button
+                    className="submit-btn"
+                    onClick={requestChanges}
+                    disabled={requesting || !requestMessage.trim()}
+                  >
+                    {requesting ? "Sending..." : "Send request"}
+                  </button>
+                </div>
+              )}
             </>
           )}
+
+          {compare(latestOffer.status, "In Negotiation") && (
+            <>
+              <p>
+                The team is reviewing your request. You can still accept the
+                current terms, or decline the offer.
+              </p>
+              <div className="offer-actions">
+                <button className="apply-btn" onClick={acceptOffer} disabled={accepting}>
+                  {accepting ? "Accepting..." : "Accept Offer"}
+                </button>
+                <button
+                  className="btn-ghost"
+                  onClick={declineOffer}
+                  disabled={accepting || declining}
+                >
+                  {declining ? "Declining..." : "Decline"}
+                </button>
+              </div>
+            </>
+          )}
+
+          {compare(latestOffer.status, "Final") && (
+            <>
+              <p>
+                This is the team's final offer. Accept it to become an intern —
+                it can no longer be negotiated.
+              </p>
+              <div className="offer-actions">
+                <button className="apply-btn" onClick={acceptOffer} disabled={accepting}>
+                  {accepting ? "Accepting..." : "Accept Offer"}
+                </button>
+                <button
+                  className="btn-ghost"
+                  onClick={declineOffer}
+                  disabled={accepting || declining}
+                >
+                  {declining ? "Declining..." : "Decline"}
+                </button>
+              </div>
+            </>
+          )}
+
           {compare(latestOffer.status, "Accepted") && (
             <>
-              <p>Offer accepted — welcome aboard!</p>
+              <p>
+                Offer accepted! We're waiting on the final confirmation from the
+                team before you become an intern. This page reloads automatically
+                once it goes through.
+              </p>
+            </>
+          )}
+
+          {compare(latestOffer.status, "Confirmed") && (
+            <>
+              <p>Offer confirmed — you're hired! Welcome aboard.</p>
               <button
                 className="apply-btn"
                 onClick={() => navigate("/intern", { replace: true })}
               >
-                Go to intern dashboard
+                Open intern dashboard
               </button>
             </>
           )}
+
           {compare(latestOffer.status, "Declined") && (
             <p>This offer was declined.</p>
           )}

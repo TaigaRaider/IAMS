@@ -7,6 +7,76 @@
   }
 }
 
+.offer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.request-box {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .submit-btn {
+    align-self: flex-start;
+  }
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: transparent;
+  color: var(--primary);
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--primary-soft);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.offer-terms {
+  .term-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+  }
+
+  .term-section {
+    margin-top: 14px;
+
+    p {
+      margin: 6px 0 0;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+  }
+}
+
+.term-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.term-value {
+  text-align: right;
+  font-size: 14px;
+}
+
 .applicant-page {
   max-width: 1000px;
   margin: 0 auto;
