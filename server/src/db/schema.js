@@ -87,9 +87,72 @@ export const offers = sqliteTable(
       .notNull()
       .unique()
       .references(() => applications.id),
-    status: text("status", { enum: ["Extended", "Accepted", "Declined"] })
+    status: text("status", {
+      enum: [
+        "Draft",
+        "Extended",
+        "In Negotiation",
+        "Final",
+        "Accepted",
+        "Confirmed",
+        "Declined",
+      ],
+    })
       .notNull()
-      .default("Extended"),
+      .default("Draft"),
+    current_revision_id: integer("current_revision_id"),
+    created_at: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+);
+
+export const offerRevisions = sqliteTable(
+  "offer_revisions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    offer_id: integer("offer_id")
+      .notNull()
+      .references(() => offers.id),
+    version: integer("version").notNull(),
+    kind: text("kind", {
+      enum: ["initial", "counter", "final", "reoffer"],
+    })
+      .notNull()
+      .default("initial"),
+    role_id: integer("role_id").references(() => roles.id),
+    position_title: text("position_title"),
+    compensation: text("compensation").notNull(),
+    duration: text("duration"),
+    start_date: text("start_date"),
+    narration: text("narration").notNull(),
+    terms: text("terms").notNull(),
+    expiry_date: text("expiry_date"),
+    status: text("status", {
+      enum: ["proposed", "accepted", "declined", "superseded"],
+    })
+      .notNull()
+      .default("proposed"),
+    created_by: integer("created_by")
+      .notNull()
+      .references(() => users.id),
+    created_at: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+);
+
+export const offerMessages = sqliteTable(
+  "offer_messages",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    offer_id: integer("offer_id")
+      .notNull()
+      .references(() => offers.id),
+    sender_role: text("sender_role", {
+      enum: ["admin", "candidate"],
+    }).notNull(),
+    message: text("message").notNull(),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, logout } from "../api";
 
-export default function AddRoleForm() {
+export default function AddRoleForm({ initial = null }) {
   const navigate = useNavigate();
-  const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState("");
-  const [description, setDescription] = useState("");
+  const editing = Boolean(initial);
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [department, setDepartment] = useState(initial?.department ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,14 +18,22 @@ export default function AddRoleForm() {
     setSuccess("");
     setLoading(true);
     try {
-      await api("/roles", {
-        method: "POST",
-        body: { title, department, description: description || null },
-      });
-      setSuccess("Role created successfully.");
-      setTitle("");
-      setDepartment("");
-      setDescription("");
+      if (editing) {
+        await api(`/roles/${initial.id}`, {
+          method: "PATCH",
+          body: { title, department, description: description || null },
+        });
+        setSuccess("Role updated successfully.");
+      } else {
+        await api("/roles", {
+          method: "POST",
+          body: { title, department, description: description || null },
+        });
+        setSuccess("Role created successfully.");
+        setTitle("");
+        setDepartment("");
+        setDescription("");
+      }
     } catch (err) {
       if (String(err.message).includes("token") || String(err.message).includes("401")) {
         logout();
@@ -37,10 +46,21 @@ export default function AddRoleForm() {
     }
   };
 
+  const handleBack = () => navigate("/dashboard/roles");
+
   return (
     <div className="card" style={{ maxWidth: 520 }}>
       {error && <p className="form-error">{error}</p>}
-      {success && <p className="form-success">{success}</p>}
+      {success && (
+        <>
+          <p className="form-success">{success}</p>
+          {editing && (
+            <button className="btn-ghost" onClick={handleBack}>
+              Back to roles
+            </button>
+          )}
+        </>
+      )}
       <form className="access-form" onSubmit={handleSubmit}>
         <label className="label" htmlFor="role-title-field">
           Title:
@@ -83,7 +103,7 @@ export default function AddRoleForm() {
         <input
           className="submit-btn"
           type="submit"
-          value={loading ? "Creating..." : "Create Role"}
+          value={loading ? "Saving..." : editing ? "Save Changes" : "Create Role"}
           disabled={loading}
         />
       </form>

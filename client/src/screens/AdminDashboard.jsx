@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Routes, Route, useNavigate } from "react-router-dom";
+import { Link, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -21,6 +21,8 @@ import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 import AdminInternsPage from "./AdminInternsPage.jsx";
 import AdminRolesPage from "./AdminRolesPage.jsx";
 import AdminOffersPage from "./AdminOffersPage.jsx";
+import AdminOfferDetail from "./AdminOfferDetail.jsx";
+import AdminOfferComposerPage from "./AdminOfferComposerPage.jsx";
 import "./AdminDashboard.css";
 
 const ADMIN_NAV = [
@@ -198,6 +200,21 @@ function AddRolePage() {
   );
 }
 
+function EditRolePage() {
+  const { state } = useLocation();
+  const role = state?.role ?? null;
+  return (
+    <div className="page">
+      <h1 className="page-title">Edit Role</h1>
+      {role ? (
+        <AddRoleForm initial={role} />
+      ) : (
+        <p className="form-error">No role selected. Choose Edit from the Roles page.</p>
+      )}
+    </div>
+  );
+}
+
 function AdminDashboard() {
   return (
     <DashboardShell navItems={ADMIN_NAV}>
@@ -207,7 +224,10 @@ function AdminDashboard() {
         <Route path="interns" element={<AdminInternsPage />} />
         <Route path="interviews" element={<InterviewPage />} />
         <Route path="roles" element={<AdminRolesPage />} />
+        <Route path="roles/edit" element={<EditRolePage />} />
         <Route path="offers" element={<AdminOffersPage />} />
+        <Route path="offers/new" element={<AdminOfferComposerPage />} />
+        <Route path="offers/:id" element={<AdminOfferDetail />} />
         <Route path="add" element={<AddRolePage />} />
       </Routes>
     </DashboardShell>

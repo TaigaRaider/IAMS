@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Briefcase } from "lucide-react";
+import { Plus, Briefcase, Pencil, Trash2 } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
@@ -31,6 +31,7 @@ function AdminRolesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toggling, setToggling] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -80,6 +81,23 @@ function AdminRolesPage() {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
       setToggling(null);
+    }
+  };
+
+  const deleteRole = async (role) => {
+    const confirmed = window.confirm(
+      `Delete role "${role.title}"? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    setDeleting(role.id);
+    setError("");
+    try {
+      await api(`/roles/${role.id}`, { method: "DELETE" });
+      setRoles((prev) => prev.filter((r) => r.id !== role.id));
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -176,8 +194,25 @@ function AdminRolesPage() {
                       )}
                     </td>
                     <td>
+                      <div className="row-actions">
+                        <Link
+                          className="btn-ghost"
+                          to="/dashboard/roles/edit"
+                          state={{ role }}
+                        >
+                          <Pencil size={14} /> Edit
+                        </Link>
+                        <button
+                          className="btn-ghost danger"
+                          onClick={() => deleteRole(role)}
+                          disabled={deleting === role.id}
+                        >
+                          <Trash2 size={14} />
+                          {deleting === role.id ? "Deleting…" : "Delete"}
+                        </button>
+                      </div>
                       <select
-                        className="status-select"
+                        className="status-select role-status-select"
                         value={role.status}
                         disabled={toggling === role.id}
                         onChange={(e) => toggleRole(role.id, e.target.value)}
