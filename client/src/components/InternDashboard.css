@@ -195,6 +195,32 @@
   }
 }
 
+.contact-item {
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 8px;
+  margin: -8px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: var(--primary-soft);
+
+    .contact-chevron {
+      color: var(--primary);
+      transform: translateX(2px);
+    }
+  }
+}
+
+.contact-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--muted);
+  transition:
+    color 0.2s,
+    transform 0.2s;
+}
+
 .resource-icon,
 .contact-icon {
   width: 38px;
@@ -254,6 +280,126 @@
   font-style: italic;
 }
 
+.contact-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+.contact-modal {
+  background: var(--card-background);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  max-width: 400px;
+  width: 100%;
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+
+  .contact-modal-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .contact-modal-avatar {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
+
+  .contact-modal-title {
+    flex: 1;
+    min-width: 0;
+
+    h3 {
+      margin: 0;
+      font-size: 17px;
+      color: var(--heading);
+      overflow-wrap: anywhere;
+    }
+
+    span {
+      font-size: 13px;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .contact-modal-close {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+
+    &:hover {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+  }
+
+  .contact-modal-note {
+    margin: 14px 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--foreground);
+  }
+
+  .contact-modal-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .contact-modal-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--input-background);
+    color: var(--foreground);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color 0.2s;
+
+    svg {
+      flex-shrink: 0;
+      color: var(--primary);
+    }
+
+    &:hover {
+      border-color: var(--primary);
+    }
+  }
+
+  .contact-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+
+    a {
+      flex: 1;
+      justify-content: center;
+      text-decoration: none;
+    }
+  }
+}
+
 .task-btn {
   display: inline-flex;
   align-items: center;
@@ -264,17 +410,32 @@
   color: var(--foreground, #333);
   font-size: 13px;
   font-weight: 600;
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 7px 12px;
+  border-radius: 10px;
   cursor: pointer;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
     background: var(--input-background);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(39, 39, 42, 0.1);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--primary-soft);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 }
 

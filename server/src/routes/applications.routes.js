@@ -11,6 +11,7 @@ const applicationSelect = {
   id: applications.id,
   applicant_id: applications.applicant_id,
   applicant_name: users.full_name,
+  applicant_email: users.email,
   role_id: applications.role_id,
   role_title: roles.title,
   status: applications.status,
