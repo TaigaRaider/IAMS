@@ -41,7 +41,7 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({ limit: "20kb" }));
 
 const jsonError = (message) => (_req, res) =>
   res.status(429).json({ error: message });
