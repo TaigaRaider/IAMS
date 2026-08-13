@@ -29,14 +29,6 @@ const INTERN_NAV = [
   { to: "/profile", icon: UserRound, label: "Profile" },
 ];
 
-const ONBOARDING_STEPS = [
-  { label: "Submit required documents", done: true },
-  { label: "Complete onboarding forms", done: true },
-  { label: "Set up work email & accounts", done: false },
-  { label: "Review employee handbook", done: false },
-  { label: "Meet your team & mentor", done: false },
-];
-
 const CONTACTS = [
   { name: "HR Coordinator", detail: "hr@iams.dev", icon: Phone },
   { name: "Mentor", detail: "mentor@iams.dev", icon: Mail },
@@ -62,6 +54,30 @@ function InternOverview() {
   const [roles, setRoles] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [error, setError] = useState("");
+
+  const [onboardingSteps, setOnboardingSteps] = useState(() => {
+    const saved = localStorage.getItem(`onboarding_${session?.sub}`);
+    if (saved) return JSON.parse(saved);
+    return [
+      { label: "Submit required documents", done: true },
+      { label: "Complete onboarding forms", done: true },
+      { label: "Set up work email & accounts", done: false },
+      { label: "Review employee handbook", done: false },
+      { label: "Meet your team & mentor", done: false },
+    ];
+  });
+
+  useEffect(() => {
+    if (session?.sub) {
+      localStorage.setItem(`onboarding_${session.sub}`, JSON.stringify(onboardingSteps));
+    }
+  }, [onboardingSteps, session?.sub]);
+
+  const toggleOnboardingStep = (index) => {
+    const newSteps = [...onboardingSteps];
+    newSteps[index].done = !newSteps[index].done;
+    setOnboardingSteps(newSteps);
+  };
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -127,8 +143,8 @@ function InternOverview() {
     ? roles.find((r) => r.id === hired.role_id) ?? null
     : null;
 
-  const doneCount = ONBOARDING_STEPS.filter((s) => s.done).length;
-  const progress = Math.round((doneCount / ONBOARDING_STEPS.length) * 100);
+  const doneCount = onboardingSteps.filter((s) => s.done).length;
+  const progress = Math.round((doneCount / onboardingSteps.length) * 100);
 
   const keyDates = [
     {
@@ -216,7 +232,7 @@ function InternOverview() {
           <div className="card-head">
             <h2>Onboarding Checklist</h2>
             <span className="view-all">
-              {doneCount}/{ONBOARDING_STEPS.length} done
+              {doneCount}/{onboardingSteps.length} done
             </span>
           </div>
           <div className="progress-track">
@@ -225,14 +241,19 @@ function InternOverview() {
             </div>
           </div>
           <ul className="checklist">
-            {ONBOARDING_STEPS.map((step) => (
-              <li key={step.label} className={step.done ? "done" : ""}>
+            {onboardingSteps.map((step, idx) => (
+              <li 
+                key={step.label} 
+                className={step.done ? "done" : ""} 
+                onClick={() => toggleOnboardingStep(idx)}
+                style={{ cursor: "pointer", transition: "background-color 0.2s" }}
+              >
                 {step.done ? (
                   <CheckCircle2 className="check-icon done" size={20} />
                 ) : (
                   <Circle className="check-icon" size={20} />
                 )}
-                <span>{step.label}</span>
+                <span style={{ userSelect: "none" }}>{step.label}</span>
               </li>
             ))}
           </ul>
@@ -240,19 +261,36 @@ function InternOverview() {
 
         <section className="card">
           <h2>Key Dates</h2>
-          <ul className="timeline">
-            {keyDates.map((item) => (
-              <li key={item.label}>
-                <div className={`timeline-icon ${item.done ? "done" : ""}`}>
-                  <item.icon size={16} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "16px", marginTop: "16px" }}>
+            {keyDates.map((item) => {
+              let month = "TBD";
+              let day = "—";
+              let year = "";
+              if (item.value && !["—", "Congrats!", "Soon"].includes(item.value)) {
+                 const parts = item.value.split(" ");
+                 if (parts.length >= 2) {
+                   month = parts[0].toUpperCase();
+                   day = parseInt(parts[1], 10);
+                   year = parts[2] || "";
+                 }
+              }
+              return (
+                <div key={item.label} style={{ border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden", textAlign: "center", background: "var(--card-background)", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                  <div style={{ background: item.done ? "var(--primary, #6366f1)" : "var(--muted, #9ca3af)", color: "white", padding: "6px", fontWeight: "bold", fontSize: "13px", letterSpacing: "1px" }}>
+                    {month} {year}
+                  </div>
+                  <div style={{ padding: "16px 10px" }}>
+                    <div style={{ fontSize: "32px", fontWeight: "800", lineHeight: 1, marginBottom: "8px", color: "var(--heading)" }}>
+                      {day}
+                    </div>
+                    <div style={{ fontSize: "13px", color: "var(--muted)", fontWeight: 500, lineHeight: 1.2 }}>
+                      {item.label}
+                    </div>
+                  </div>
                 </div>
-                <div className="timeline-info">
-                  <strong>{item.label}</strong>
-                  <span>{item.value}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         </section>
 
         <section className="card">
@@ -305,39 +343,6 @@ function InternOverview() {
               ))}
             </ul>
           )}
-        </section>
-
-        <section className="card">
-          <h2>Getting Started</h2>
-          <ul className="resource-list">
-            <li>
-              <div className="resource-icon">
-                <ClipboardList size={18} />
-              </div>
-              <div className="resource-info">
-                <strong>Onboarding Packet</strong>
-                <span>Forms, policies &amp; first-week guide</span>
-              </div>
-            </li>
-            <li>
-              <div className="resource-icon">
-                <BookOpen size={18} />
-              </div>
-              <div className="resource-info">
-                <strong>Employee Handbook</strong>
-                <span>Company culture &amp; expectations</span>
-              </div>
-            </li>
-            <li>
-              <div className="resource-icon">
-                <Gift size={18} />
-              </div>
-              <div className="resource-info">
-                <strong>Welcome Kit</strong>
-                <span>Swag &amp; equipment handover</span>
-              </div>
-            </li>
-          </ul>
         </section>
 
         <section className="card">
