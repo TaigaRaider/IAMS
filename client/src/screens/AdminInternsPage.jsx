@@ -95,6 +95,7 @@ function AdminInternsPage() {
   const [offers, setOffers] = useState([]);
   const [error, setError] = useState("");
   const [promoting, setPromoting] = useState(null);
+  const [selectedIntern, setSelectedIntern] = useState(null);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -181,7 +182,7 @@ function AdminInternsPage() {
             return (
               <article className="intern-block" key={intern.id}>
                 <div className="intern-block-head">
-                  <div className="applicant-cell">
+                  <div className="applicant-cell" onClick={() => setSelectedIntern(intern)} style={{ cursor: 'pointer', transition: 'opacity 0.2s' }} title="View profile">
                     <div className="avatar-mini">{initials(intern.full_name)}</div>
                     <div className="intern-identity">
                       <strong>{intern.full_name}</strong>
@@ -248,6 +249,44 @@ function AdminInternsPage() {
               </article>
             );
           })}
+        </div>
+      )}
+
+      {selectedIntern && (
+        <div className="modal-overlay" onClick={() => setSelectedIntern(null)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card cute-profile-card" onClick={(e) => e.stopPropagation()} style={{ width: "90%", maxWidth: "360px", background: "var(--card-background)", position: "relative", overflow: "hidden", borderRadius: "20px", padding: 0, border: "none", boxShadow: "0 10px 40px rgba(0,0,0,0.15)" }}>
+             <button onClick={() => setSelectedIntern(null)} style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, background: "rgba(255,255,255,0.7)", border: "none", borderRadius: "50%", width: "28px", height: "28px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: "#333", backdropFilter: "blur(4px)" }}>&times;</button>
+             <div className="profile-banner" style={{ height: "100px", background: "linear-gradient(135deg, var(--primary-soft, #fbc2eb) 0%, var(--primary, #a6c1ee) 100%)" }}></div>
+             <div className="cute-profile-content" style={{ padding: "0 24px 24px", display: "flex", flexDirection: "column", alignItems: "center", marginTop: "-40px" }}>
+                <div className="cute-avatar-wrapper" style={{ padding: "4px", background: "var(--card-background)", borderRadius: "50%" }}>
+                   <div className="cute-avatar" style={{ width: "72px", height: "72px", background: "var(--primary-soft, #f0f4f8)", color: "var(--primary, #6366f1)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", fontWeight: "bold" }}>
+                      {initials(selectedIntern.full_name)}
+                   </div>
+                </div>
+                <div className="cute-profile-info" style={{ textAlign: "center", marginTop: "12px" }}>
+                   <h2 style={{ fontSize: "20px", margin: "0 0 4px", color: "var(--heading)" }}>{selectedIntern.full_name}</h2>
+                   <div style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "12px" }}>{selectedIntern.email}</div>
+                   <span className="cute-badge capitalize" style={{ display: "inline-flex", background: "var(--primary-soft, #eef2ff)", color: "var(--primary, #6366f1)", padding: "4px 12px", borderRadius: "99px", fontSize: "12px", fontWeight: 600 }}>
+                     {selectedIntern.role_title ?? "Intern"}
+                   </span>
+                </div>
+                
+                <div style={{ width: "100%", marginTop: "24px", borderTop: "1px solid var(--border)", paddingTop: "16px" }}>
+                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span style={{ color: "var(--muted)", fontSize: "13px" }}>Department</span>
+                      <span style={{ fontWeight: 500, fontSize: "14px" }}>{selectedIntern.department ?? "—"}</span>
+                   </div>
+                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span style={{ color: "var(--muted)", fontSize: "13px" }}>Tasks Progress</span>
+                      <span style={{ fontWeight: 500, fontSize: "14px" }}>{selectedIntern.progress}%</span>
+                   </div>
+                   <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "var(--muted)", fontSize: "13px" }}>Tasks Completed</span>
+                      <span style={{ fontWeight: 500, fontSize: "14px" }}>{selectedIntern.tasks_done} / {selectedIntern.tasks_total}</span>
+                   </div>
+                </div>
+             </div>
+          </div>
         </div>
       )}
     </div>
