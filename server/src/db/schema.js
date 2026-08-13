@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer, unique } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable(
   "users",
@@ -23,6 +23,7 @@ export const users = sqliteTable(
   (t) => [
     unique("users_email_unique").on(t.email),
     unique("users_username_unique").on(t.username),
+    uniqueIndex("users_username_ci_unique").on(sql`lower(${t.username})`),
   ],
 );
 

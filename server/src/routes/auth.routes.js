@@ -36,6 +36,21 @@ function isUniqueViolation(err) {
   );
 }
 
+// Which column tripped a unique constraint? SQLite reports either the table
+// column ("UNIQUE constraint failed: users.username") or the named index
+// ("UNIQUE constraint failed: index 'users_username_ci_unique'").
+function uniqueField(err) {
+  const cause = err?.cause ?? err;
+  const target = (cause?.message ?? "").match(/UNIQUE constraint failed:\s*(.*)/i)?.[1] ?? "";
+  if (/users\.username|users_username_unique|users_username_ci_unique/.test(target)) {
+    return "username";
+  }
+  if (/users\.email|users_email_unique/.test(target)) {
+    return "email";
+  }
+  return null;
+}
+
 function isValidPassword(password) {
   if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
     return false;
@@ -99,7 +114,14 @@ authRouter.post("/signup", async (req, res, next) => {
     res.status(201).json({ data: { id: Number(result.lastInsertRowid) } });
   } catch (err) {
     if (isUniqueViolation(err)) {
-      return res.status(409).json({ error: "Email or username already exists" });
+      const field = uniqueField(err);
+      const error =
+        field === "email"
+          ? "An account with this email already exists"
+          : field === "username"
+            ? "This username is already taken"
+            : "Email or username already exists";
+      return res.status(409).json({ error });
     }
     next(err);
   }
