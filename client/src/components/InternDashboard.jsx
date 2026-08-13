@@ -145,11 +145,11 @@ function InternOverview() {
     },
     {
       label: "Offer accepted",
-      value: "Congrats!",
+      value: offer?.current_revision ? formatDate(offer.current_revision.created_at) : "Congrats!",
       icon: BadgeCheck,
       done: true,
     },
-    { label: "Internship starts", value: "Soon", icon: CalendarDays, done: false },
+    { label: "Internship starts", value: offer?.current_revision?.start_date ? formatDate(offer.current_revision.start_date) : "Soon", icon: CalendarDays, done: false },
   ];
 
   return (
