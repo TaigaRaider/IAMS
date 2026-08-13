@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `users_username_ci_unique` ON `users` (lower("username"));

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useEffect, useRef, useState } from "react";
+
 import { Navigate, useLocation } from "react-router-dom";
 import { api, getSession, logout, saveSession } from "../api";
 import { ShellSkeleton } from "./Skeletons.jsx";
@@ -34,7 +34,12 @@ function RequireAuth({ roles, children }) {
         await logout();
         if (!cancelled) {
           attemptsRef.current = 0;
-          setState({ checking: false, role: null, deactivated: false, error: "" });
+          setState({
+            checking: false,
+            role: null,
+            deactivated: false,
+            error: "",
+          });
         }
         return;
       }
@@ -48,10 +53,22 @@ function RequireAuth({ roles, children }) {
         attemptsRef.current = 0;
         if (fresh.deactivated) {
           // Deactivated accounts are confined to the account page.
-          if (!cancelled) setState({ checking: false, role: null, deactivated: true, error: "" });
+          if (!cancelled)
+            setState({
+              checking: false,
+              role: null,
+              deactivated: true,
+              error: "",
+            });
           return;
         }
-        if (!cancelled) setState({ checking: false, role: fresh.role, deactivated: false, error: "" });
+        if (!cancelled)
+          setState({
+            checking: false,
+            role: fresh.role,
+            deactivated: false,
+            error: "",
+          });
       } catch (err) {
         if (cancelled) return;
         const status = err?.status;
@@ -63,7 +80,12 @@ function RequireAuth({ roles, children }) {
           await logout();
           if (!cancelled) {
             attemptsRef.current = 0;
-            setState({ checking: false, role: null, deactivated: false, error: "" });
+            setState({
+              checking: false,
+              role: null,
+              deactivated: false,
+              error: "",
+            });
           }
           return;
         }
