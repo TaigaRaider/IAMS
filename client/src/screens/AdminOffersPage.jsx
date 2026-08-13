@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BadgeCheck, Send, Eye, PenLine, Flag, RotateCcw } from "lucide-react";
+import { BadgeCheck, Send, Flag, PenLine, Eye } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
@@ -95,7 +95,16 @@ function OfferRoles({ applications, roles, offers }) {
   );
 }
 
+const COMPLETED_STATUSES = ["Final", "Confirmed", "Declined"];
+
 function OfferRowActions({ offer, busyId, onAction }) {
+  if (COMPLETED_STATUSES.includes(offer.status)) {
+    return (
+      <Link className="btn-ghost view-offer-btn" to={`/dashboard/offers/${offer.id}`}>
+        <Eye size={14} /> View
+      </Link>
+    );
+  }
   if (compare(offer.status, "Draft")) {
     return (
       <button
@@ -122,20 +131,6 @@ function OfferRowActions({ offer, busyId, onAction }) {
       </button>
     );
   }
-  if (compare(offer.status, "Declined")) {
-    return (
-      <Link className="apply-btn" to={`/dashboard/offers/${offer.id}`}>
-        <RotateCcw size={14} /> Re-offer
-      </Link>
-    );
-  }
-  if (compare(offer.status, "Final") || compare(offer.status, "Confirmed")) {
-    return (
-      <Link className="btn-ghost" to={`/dashboard/offers/${offer.id}`}>
-        <Eye size={14} /> View
-      </Link>
-    );
-  }
   return null;
 }
 
@@ -147,8 +142,8 @@ function OffersList({ applications, offers, busyId, onAction }) {
       <div className="section-head">
         <h2>Offers</h2>
         <p>
-          Drafts are only visible to you. Extended offers can be negotiated; an
-          accepted offer waits for your final confirmation.
+          Drafts are only visible to you. Active offers can be followed through
+          here; completed offers open into a full review.
         </p>
       </div>
       {offers.length === 0 ? (
@@ -164,15 +159,12 @@ function OffersList({ applications, offers, busyId, onAction }) {
               <th>Applicant</th>
               <th>Applied For</th>
               <th>Status</th>
-              <th>Compensation</th>
-              <th>Extended On</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {offers.map((offer) => {
               const appliedRole = appById.get(Number(offer.application_id));
-              const rev = offer.current_revision;
               return (
                 <tr key={offer.id}>
                   <td>
@@ -187,8 +179,6 @@ function OffersList({ applications, offers, busyId, onAction }) {
                       {offer.status}
                     </span>
                   </td>
-                  <td>{rev?.compensation ?? "—"}</td>
-                  <td>{offer.created_at}</td>
                   <td>
                     <OfferRowActions
                       offer={offer}
