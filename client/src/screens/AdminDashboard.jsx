@@ -10,6 +10,7 @@ import {
   GraduationCap,
   UserRound,
   BarChart3,
+  ListTodo,
 } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
@@ -20,6 +21,7 @@ import InterviewPage from "../components/InterviewPage.jsx";
 import SearchResults from "../components/SearchResults.jsx";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 import AdminInternsPage from "./AdminInternsPage.jsx";
+import AdminTasksPage from "./AdminTasksPage.jsx";
 import AdminRolesPage from "./AdminRolesPage.jsx";
 import AdminOffersPage from "./AdminOffersPage.jsx";
 import AdminOfferDetail from "./AdminOfferDetail.jsx";
@@ -30,6 +32,7 @@ const ADMIN_NAV = [
   { to: "/dashboard", end: true, icon: LayoutDashboard, label: "Dashboard" },
   { to: "/dashboard/applicants", icon: Users, label: "Applicants" },
   { to: "/dashboard/interns", icon: GraduationCap, label: "Interns" },
+  { to: "/dashboard/tasks", icon: ListTodo, label: "Tasks" },
   { to: "/dashboard/interviews", icon: CalendarClock, label: "Interviews" },
   { to: "/dashboard/roles", icon: Briefcase, label: "Roles" },
   { to: "/dashboard/offers", icon: BadgeCheck, label: "Offers" },
@@ -223,6 +226,7 @@ function AdminDashboard() {
         <Route index element={<Overview />} />
         <Route path="applicants" element={<AdminApplicantsPage />} />
         <Route path="interns" element={<AdminInternsPage />} />
+        <Route path="tasks" element={<AdminTasksPage />} />
         <Route path="interviews" element={<InterviewPage />} />
         <Route path="roles" element={<AdminRolesPage />} />
         <Route path="roles/edit" element={<EditRolePage />} />

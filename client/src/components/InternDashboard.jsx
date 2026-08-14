@@ -16,6 +16,8 @@ CheckCircle2,
   Gift,
   Hourglass,
   UserRound,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import { api, logout, getSession } from "../api";
 import { compare } from "../utils/compare";
@@ -29,9 +31,30 @@ const INTERN_NAV = [
 ];
 
 const CONTACTS = [
-  { name: "HR Coordinator", detail: "hr@iams.dev", icon: Phone },
-  { name: "Mentor", detail: "mentor@iams.dev", icon: Mail },
-  { name: "Intern Cohort", detail: "Slack · #interns", icon: Users },
+  {
+    name: "Chiamaka Obi",
+    role: "HR Coordinator",
+    phone: "+234 803 456 7890",
+    email: "hr@iams.dev",
+    icon: Phone,
+    note: "Reach out for onboarding, payroll, leave, or any HR questions.",
+  },
+  {
+    name: "Tunde Bakare",
+    role: "Mentor",
+    phone: "+234 705 123 4567",
+    email: "mentor@iams.dev",
+    icon: Mail,
+    note: "Your mentor for project guidance, feedback, and career advice.",
+  },
+  {
+    name: "Intern Cohort",
+    role: "Team · Slack #interns",
+    phone: "+234 812 987 6543",
+    email: "Slack · #interns",
+    icon: Users,
+    note: "Connect with fellow interns for collaboration and support.",
+  },
 ];
 
 const formatDate = (value) => {
@@ -53,6 +76,7 @@ function InternOverview() {
   const [roles, setRoles] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [error, setError] = useState("");
+  const [selectedContact, setSelectedContact] = useState(null);
 
   const [onboardingSteps, setOnboardingSteps] = useState(() => {
     const saved = localStorage.getItem(`onboarding_${session?.sub}`);
@@ -348,19 +372,77 @@ function InternOverview() {
           <h2>Your Contacts</h2>
           <ul className="contact-list">
             {CONTACTS.map((c) => (
-              <li key={c.name}>
+              <li
+                key={c.name}
+                className="contact-item"
+                onClick={() => setSelectedContact(c)}
+              >
                 <div className="contact-icon">
                   <c.icon size={16} />
                 </div>
                 <div className="contact-info">
                   <strong>{c.name}</strong>
-                  <span>{c.detail}</span>
+                  <span>{c.role}</span>
                 </div>
+                <ChevronRight size={16} className="contact-chevron" />
               </li>
             ))}
           </ul>
         </section>
       </div>
+
+      {selectedContact && (
+        <div
+          className="contact-modal-backdrop"
+          onClick={() => setSelectedContact(null)}
+        >
+          <div
+            className="contact-modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="contact-modal-head">
+              <div className="contact-modal-avatar">
+                <selectedContact.icon size={22} />
+              </div>
+              <div className="contact-modal-title">
+                <h3>{selectedContact.name}</h3>
+                <span>{selectedContact.role}</span>
+              </div>
+              <button
+                className="contact-modal-close"
+                onClick={() => setSelectedContact(null)}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="contact-modal-note">{selectedContact.note}</p>
+
+            <div className="contact-modal-details">
+              <a href={`tel:${selectedContact.phone.replace(/\s/g, "")}`} className="contact-modal-row">
+                <Phone size={16} />
+                <span>{selectedContact.phone}</span>
+              </a>
+              <a href={`mailto:${selectedContact.email}`} className="contact-modal-row">
+                <Mail size={16} />
+                <span>{selectedContact.email}</span>
+              </a>
+            </div>
+
+            <div className="contact-modal-actions">
+              <a className="btn-ghost" href={`tel:${selectedContact.phone.replace(/\s/g, "")}`}>
+                <Phone size={16} /> Call
+              </a>
+              <a className="apply-btn" href={`mailto:${selectedContact.email}`}>
+                <Mail size={16} /> Email
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
