@@ -17,6 +17,7 @@ import EmptyState from "../components/EmptyState.jsx";
 import { OverviewSkeleton } from "../components/Skeletons.jsx";import AddRoleForm from "../components/AddRoleForm.jsx";
 import DashboardShell from "../components/DashboardShell.jsx";
 import InterviewPage from "../components/InterviewPage.jsx";
+import SearchResults from "../components/SearchResults.jsx";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
 import AdminInternsPage from "./AdminInternsPage.jsx";
 import AdminRolesPage from "./AdminRolesPage.jsx";
@@ -228,6 +229,7 @@ function AdminDashboard() {
         <Route path="offers" element={<AdminOffersPage />} />
         <Route path="offers/new" element={<AdminOfferComposerPage />} />
         <Route path="offers/:id" element={<AdminOfferDetail />} />
+        <Route path="search" element={<SearchResults />} />
         <Route path="add" element={<AddRolePage />} />
       </Routes>
     </DashboardShell>

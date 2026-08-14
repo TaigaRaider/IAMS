@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -10,11 +10,9 @@ import {
   Users,
   Phone,
   Mail,
-  CheckCircle2,
+CheckCircle2,
   Circle,
   FileCheck2,
-  ClipboardList,
-  BookOpen,
   Gift,
   Hourglass,
   UserRound,
@@ -22,6 +20,7 @@ import {
 import { api, logout, getSession } from "../api";
 import { compare } from "../utils/compare";
 import DashboardShell from "./DashboardShell.jsx";
+import SearchResults from "./SearchResults.jsx";
 import "./InternDashboard.css";
 
 const INTERN_NAV = [
@@ -369,7 +368,10 @@ function InternOverview() {
 function InternDashboard() {
   return (
     <DashboardShell navItems={INTERN_NAV}>
-      <InternOverview />
+      <Routes>
+        <Route index element={<InternOverview />} />
+        <Route path="search" element={<SearchResults />} />
+      </Routes>
     </DashboardShell>
   );
 }

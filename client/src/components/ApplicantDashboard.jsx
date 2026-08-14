@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { FileText, UserRound, CalendarClock } from "lucide-react";
 import DashboardShell from "./DashboardShell.jsx";
+import SearchResults from "./SearchResults.jsx";
 import ApplicantPage from "../screens/ApplicantPage.jsx";
 import InterviewPage from "./InterviewPage.jsx";
 
@@ -16,6 +17,7 @@ function ApplicantDashboard() {
       <Routes>
         <Route index element={<ApplicantPage />} />
         <Route path="interviews" element={<InterviewPage />} />
+        <Route path="search" element={<SearchResults />} />
       </Routes>
     </DashboardShell>
   );

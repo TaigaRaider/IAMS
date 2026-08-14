@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, LogOut, Menu } from "lucide-react";
+import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { LogOut, Menu } from "lucide-react";
 import { logout } from "../api";
+import NotificationBell from "./NotificationBell.jsx";
 import "./DashboardShell.css";
 
 function DashboardShell({ navItems, children }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [collapsed, setCollapsed] = useState(() => window.innerWidth <= 768);
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   const closeOnMobile = () => {
     if (window.innerWidth <= 768) setCollapsed(true);
@@ -16,6 +20,19 @@ function DashboardShell({ navItems, children }) {
     await logout();
     navigate("/login", { replace: true });
   };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const q = e.currentTarget.query.value.trim();
+    if (!q) return;
+    const root = "/" + (location.pathname.split("/")[1] ?? "");
+    if (!["/dashboard", "/applicant", "/intern"].includes(root)) return;
+    navigate(`${root}/search?q=${encodeURIComponent(q)}`);
+  };
+
+  // Clicking the logo acts as a manual refresh: bumping the key remounts the
+  // page subtree below the header so every data effect re-runs.
+  const refreshPage = () => setRefreshNonce((n) => n + 1);
 
   return (
     <>
@@ -27,10 +44,24 @@ function DashboardShell({ navItems, children }) {
         >
           <Menu />
         </button>
-        <img src="/iamslogo.png" alt="Logo" className="logo" />
-        <input type="text" placeholder="Search..." />
+        <img
+          src="/iamslogo.png"
+          alt="Logo — click to refresh"
+          className="logo logo-refresh"
+          title="Refresh page"
+          onClick={refreshPage}
+        />
+        <form className="search-form" role="search" onSubmit={handleSearch}>
+          <input
+            name="query"
+            type="text"
+            placeholder="Search..."
+            defaultValue={searchParams.get("q") ?? ""}
+            aria-label="Search"
+          />
+        </form>
         <div className="actions">
-          <Bell className="bell" />
+          <NotificationBell />
           <Link to="/profile" className="avatar-link" aria-label="Go to profile">
             <svg className="avatar" viewBox="0 0 64 64" aria-hidden="true">
               <circle cx="32" cy="24" r="14" fill="#f0e6ff" />
@@ -65,7 +96,11 @@ function DashboardShell({ navItems, children }) {
             </button>
           </div>
         </aside>
-        <main className="content">{children}</main>
+        <main className="content">
+          <div key={refreshNonce} className="content-scope">
+            {children}
+          </div>
+        </main>
       </div>
     </>
   );

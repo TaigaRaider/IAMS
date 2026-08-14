@@ -38,9 +38,24 @@ header {
     height: 40px;
   }
 
-  input {
+  .logo-refresh {
+    cursor: pointer;
+    transition: transform 0.25s ease;
+
+    &:hover {
+      transform: rotate(12deg) scale(1.06);
+    }
+  }
+
+  .search-form {
     flex: 1;
     max-width: 400px;
+    display: flex;
+  }
+
+  .search-form input {
+    flex: 1;
+    min-width: 0;
     padding: 8px 14px;
     border: none;
     border-radius: 8px;
@@ -54,18 +69,6 @@ header {
     display: flex;
     align-items: center;
     gap: 18px;
-  }
-
-  .bell {
-    width: 24px;
-    height: 24px;
-    color: var(--primary-foreground);
-    cursor: pointer;
-    transition: transform 0.15s ease;
-
-    &:hover {
-      transform: scale(1.1);
-    }
   }
 
   .avatar-link {
@@ -205,7 +208,7 @@ header {
     gap: 10px;
     padding: 10px 16px;
 
-    input {
+    .search-form {
       display: none;
     }
 
