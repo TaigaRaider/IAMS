@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText } from "lucide-react";
+import {
+  FileText,
+  Plus,
+  X,
+  Mail,
+  Briefcase,
+  CalendarDays,
+} from "lucide-react";
 import { api, logout } from "../api";
 import EmptyState from "../components/EmptyState.jsx";
 import "./AdminApplicantsPage.css";
@@ -28,6 +35,17 @@ function statusClass(status) {
   }
 }
 
+const formatDate = (value) => {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 function ApplicantsPage() {
   const navigate = useNavigate();
   const [applicants, setApplicants] = useState([]);
@@ -36,6 +54,7 @@ function ApplicantsPage() {
   const [updating, setUpdating] = useState(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [selectedApplicant, setSelectedApplicant] = useState(null);
 
   const handleUnauthorized = useCallback((err) => {
     if (String(err.message).includes("token") || String(err.message).includes("401")) {
@@ -143,13 +162,17 @@ function ApplicantsPage() {
               {filtered.map((a) => (
                 <tr key={a.id}>
                   <td>
-                    <div className="applicant-cell">
+                    <button
+                      className="applicant-cell applicant-link"
+                      onClick={() => setSelectedApplicant(a)}
+                      title="View profile"
+                    >
                       <div className="avatar-mini">{initials(a.applicant_name)}</div>
                       <strong>{a.applicant_name}</strong>
-                    </div>
+                    </button>
                   </td>
                   <td>{a.role_title}</td>
-                  <td>{a.applied_at}</td>
+                  <td>{formatDate(a.applied_at)}</td>
                   <td>
                     <span className={`status ${statusClass(a.status)}`}>
                       {a.status}
@@ -175,6 +198,86 @@ function ApplicantsPage() {
           </table>
         )}
       </div>
+
+      {selectedApplicant && (
+        <div
+          className="profile-modal-backdrop"
+          onClick={() => setSelectedApplicant(null)}
+        >
+          <div
+            className="profile-modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="profile-modal-close"
+              onClick={() => setSelectedApplicant(null)}
+              aria-label="Close"
+            >
+              <X size={16} />
+            </button>
+            <div className="profile-hero">
+              <div className="profile-avatar-ring">
+                <div className="profile-avatar">
+                  {initials(selectedApplicant.applicant_name)}
+                </div>
+              </div>
+              <div className="profile-info">
+                <h2>{selectedApplicant.applicant_name}</h2>
+                <div className="profile-sub">{selectedApplicant.applicant_email}</div>
+                <span className={`profile-badge ${statusClass(selectedApplicant.status)}`}>
+                  {selectedApplicant.status}
+                </span>
+              </div>
+            </div>
+            <div className="profile-content">
+
+              <div className="profile-details">
+                <div className="profile-detail-row">
+                  <span>
+                    <Briefcase size={14} /> Applied For
+                  </span>
+                  <span>{selectedApplicant.role_title ?? "—"}</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span>
+                    <CalendarDays size={14} /> Applied On
+                  </span>
+                  <span>{formatDate(selectedApplicant.applied_at)}</span>
+                </div>
+                <div className="profile-detail-row">
+                  <span>
+                    <Mail size={14} /> Email
+                  </span>
+                  <span>{selectedApplicant.applicant_email ?? "—"}</span>
+                </div>
+              </div>
+
+              <div className="profile-modal-actions">
+                <button
+                  className="popup-btn popup-btn-ghost"
+                  onClick={() => setSelectedApplicant(null)}
+                >
+                  Close
+                </button>
+                {selectedApplicant.status === "Hired" && (
+                  <button
+                    className="popup-btn popup-btn-primary"
+                    onClick={() =>
+                      navigate(
+                        `/dashboard/tasks?assignee=${selectedApplicant.applicant_id}`,
+                      )
+                    }
+                  >
+                    <Plus size={16} /> Add task
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

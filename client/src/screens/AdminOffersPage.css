@@ -6,22 +6,46 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
   background: transparent;
   color: var(--primary);
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 
   &:hover {
     background: var(--primary-soft);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(39, 39, 42, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--primary-soft);
   }
 
   &:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+}
+
+.view-offer-btn {
+  color: var(--foreground, #333);
+
+  &:hover {
+    color: var(--primary);
   }
 }
 

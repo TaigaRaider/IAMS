@@ -4,11 +4,34 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--card-background);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(8, 6, 13, 0.06);
 
   .status-select {
     flex: 1 1 180px;
     max-width: 240px;
     height: 2.5rem;
+  }
+}
+
+.applicant-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  strong {
+    color: var(--heading);
   }
 }
 
