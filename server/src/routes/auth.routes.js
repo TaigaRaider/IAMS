@@ -6,6 +6,7 @@ import { db } from "../db.js";
 import {
   users,
   applications,
+  authTokens,
 } from "../db/schema.js";
 import { verifyAuth } from "../middleware/auth.middleware.js";
 import {
@@ -14,6 +15,9 @@ import {
   TOKEN_ALGORITHM,
 } from "../middleware/auth.middleware.js";
 import { compare } from "../utils/compare.js";
+import { sendMail } from "../utils/mailer.js";
+import { verificationEmail, resetEmail } from "../utils/email-templates.js";
+import { issueCode, consumeCode, cooldownRemaining } from "../utils/tokens.js";
 
 const authRouter = Router();
 
@@ -22,10 +26,43 @@ const MIN_PASSWORD_LENGTH = 8;
 const MAX_LOCKED_ATTEMPTS = 15;
 const LOCKOUT_MS = 60 * 1000;
 
+// bcrypt-ing this unused hash on every failed login keeps the response time
+// roughly constant whether or not the username exists, so attackers can't
+// enumerate accounts by timing. (Generated once: cost 12 ≈ 300ms, cheap.)
+const DUMMY_HASH = bcrypt.hashSync("iams-dummy-timing-equalizer", BCRYPT_ROUNDS);
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
+const CODE_RE = /^\d{6}$/;
 
 const failedAttempts = new Map();
+
+const isDev = process.env.NODE_ENV !== "production";
+
+function cleanEmail(value) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+async function findByEmail(email) {
+  return db.select().from(users).where(eq(users.email, cleanEmail(email))).get();
+}
+
+async function issueAndSend(user, kind) {
+  const code = await issueCode(db, user.id, kind);
+  if (isDev) {
+    console.log(
+      `[mailer] ${kind} code for ${user.email}: ${code} (dev mirror in case mail doesn't arrive)`,
+    );
+  }
+  const { full_name, email } = user;
+  const html = kind === "verify"
+    ? verificationEmail({ name: full_name.split(" ")[0], code })
+    : resetEmail({ name: full_name.split(" ")[0], code });
+  const subject = kind === "verify" ? "Verify your IAMS account" : "Reset your IAMS password";
+  // Fire-and-forget: SMTP can be slow; the response must not block on it.
+  // sendMail never throws; if it fails the user can simply resend.
+  void sendMail({ to: email, subject, html });
+}
 
 function isUniqueViolation(err) {
   const cause = err?.cause ?? err;
@@ -109,9 +146,30 @@ authRouter.post("/signup", async (req, res, next) => {
         username: cleanUsername,
         password_hash,
         user_role: "applicant",
+        email_verified: 0,
       })
       .run();
-    res.status(201).json({ data: { id: Number(result.lastInsertRowid) } });
+    const userId = Number(result.lastInsertRowid);
+    const created = await db.select().from(users).where(eq(users.id, userId)).get();
+
+    try {
+      await issueAndSend(created, "verify");
+    } catch (err) {
+      if (!isDev) {
+        await db.delete(users).where(eq(users.id, userId)).run();
+        const tokenRows = await db
+          .select({ id: authTokens.id })
+          .from(authTokens)
+          .where(eq(authTokens.user_id, userId))
+          .all();
+        for (const t of tokenRows) {
+          await db.delete(authTokens).where(eq(authTokens.id, t.id)).run();
+        }
+      }
+      return next(err);
+    }
+
+    res.status(201).json({ data: { id: userId } });
   } catch (err) {
     if (isUniqueViolation(err)) {
       const field = uniqueField(err);
@@ -154,7 +212,7 @@ authRouter.post("/login", async (req, res, next) => {
 
     const passwordOk = user
       ? await bcrypt.compare(password, user.password_hash)
-      : false;
+      : await bcrypt.compare(password, DUMMY_HASH);
 
     if (!user || !passwordOk) {
       recordFailure(cleanUsername);
@@ -163,9 +221,16 @@ authRouter.post("/login", async (req, res, next) => {
 
     clearFailures(cleanUsername);
 
+    if (!compare(Number(user.email_verified), 1)) {
+      return res.status(403).json({
+        error: "Verify your email to continue",
+        code: "EMAIL_UNVERIFIED",
+      });
+    }
+
     const expiresIn = process.env.JWT_EXPIRES_IN || "1h";
     const token = jwt.sign(
-      { sub: user.id, role: user.user_role },
+      { sub: user.id, role: user.user_role, ver: user.token_version ?? 0 },
       process.env.JWT_SECRET,
       {
         algorithm: TOKEN_ALGORITHM,
@@ -265,6 +330,7 @@ authRouter.patch("/account/reactivate", verifyAuth, async (req, res, next) => {
         user_role: users.user_role,
         is_deactivated: users.is_deactivated,
         is_deleted: users.is_deleted,
+        token_version: users.token_version,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -284,7 +350,7 @@ authRouter.patch("/account/reactivate", verifyAuth, async (req, res, next) => {
 
     const expiresIn = process.env.JWT_EXPIRES_IN || "1h";
     const token = jwt.sign(
-      { sub: user.id, role: user.user_role },
+      { sub: user.id, role: user.user_role, ver: user.token_version ?? 0 },
       process.env.JWT_SECRET,
       {
         algorithm: TOKEN_ALGORITHM,
@@ -329,6 +395,88 @@ authRouter.patch("/account/deactivate", verifyAuth, async (req, res, next) => {
       .run();
 
     res.json({ data: { deactivated: true } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Change the signed-in account's password. Requires the current password; a
+// mismatch counts against the same per-username failure/ lockout tracking the
+// login uses, so guessing against a live session is throttled too.
+authRouter.patch("/account/password", verifyAuth, async (req, res, next) => {
+  const { current_password, new_password } = req.body ?? {};
+  if (typeof current_password !== "string" || !current_password) {
+    return res.status(400).json({ error: "Current password is required" });
+  }
+  if (!isValidPassword(new_password)) {
+    return res.status(400).json({
+      error: `New password must be at least ${MIN_PASSWORD_LENGTH} characters and contain a letter and a number`,
+    });
+  }
+  if (current_password === new_password) {
+    return res
+      .status(400)
+      .json({ error: "New password must be different from the current one" });
+  }
+
+  try {
+    const userId = Number(req.user.sub);
+    const user = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        password_hash: users.password_hash,
+        is_deleted: users.is_deleted,
+        token_version: users.token_version,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
+    if (!user || compare(Number(user.is_deleted), 1)) {
+      return res.status(401).json({ error: "Account doesn't exist" });
+    }
+
+    const currentOk = await bcrypt.compare(current_password, user.password_hash);
+    if (!currentOk) {
+      recordFailure(user.username);
+      return res.status(400).json({ error: "Current password is incorrect" });
+    }
+    clearFailures(user.username);
+
+    const password_hash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
+    // Revoke every outstanding session (including this one): the user signs
+    // in again with the new password.
+    await db
+      .update(users)
+      .set({ password_hash, token_version: user.token_version + 1 })
+      .where(eq(users.id, userId))
+      .run();
+
+    res.json({ data: { ok: true } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Update the signed-in account's profile (full name). Not sensitive enough
+// to revoke sessions — the token carries no name; /me returns the fresh one.
+authRouter.patch("/account/profile", verifyAuth, async (req, res, next) => {
+  const full_name = typeof req.body?.full_name === "string" ? req.body.full_name.trim() : "";
+  if (!full_name || full_name.length > 100) {
+    return res.status(400).json({ error: "Full name is required (max 100 characters)" });
+  }
+  try {
+    const userId = Number(req.user.sub);
+    const user = await db
+      .select({ id: users.id, is_deleted: users.is_deleted })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
+    if (!user || compare(Number(user.is_deleted), 1)) {
+      return res.status(401).json({ error: "Account doesn't exist" });
+    }
+    await db.update(users).set({ full_name }).where(eq(users.id, userId)).run();
+    res.json({ data: { full_name } });
   } catch (err) {
     next(err);
   }
@@ -384,6 +532,151 @@ authRouter.delete("/account", verifyAuth, async (req, res, next) => {
       .run();
 
     res.json({ data: { deleted: true } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Confirm an email with the 6-digit code sent at signup. Idempotent once
+// verified. Wrong codes are counted against the active token (5 max).
+authRouter.post("/verify-email", async (req, res, next) => {
+  const { email, code } = req.body ?? {};
+  const clean = cleanEmail(email);
+  const cleanCode = typeof code === "string" ? code.trim() : "";
+
+  if (!EMAIL_RE.test(clean)) {
+    return res.status(400).json({ error: "A valid email is required" });
+  }
+  if (!CODE_RE.test(cleanCode)) {
+    return res.status(400).json({ error: "Enter the 6-digit code from your email" });
+  }
+
+  try {
+    const user = await findByEmail(clean);
+    if (!user || compare(Number(user.is_deleted), 1)) {
+      return res.status(400).json({ error: "Invalid or expired code" });
+    }
+    if (compare(Number(user.email_verified), 1)) {
+      return res.json({ data: { ok: true } });
+    }
+
+    const result = await consumeCode(db, user.id, "verify", cleanCode);
+    if (result.ok) {
+      await db.update(users).set({ email_verified: 1 }).where(eq(users.id, user.id)).run();
+      return res.json({ data: { ok: true } });
+    }
+    if (result.reason === "code" && result.left > 0) {
+      return res.status(400).json({
+        error: `Invalid code — ${result.left} ${result.left === 1 ? "attempt" : "attempts"} left`,
+      });
+    }
+    return res.status(400).json({ error: "Invalid or expired code" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// (Re)send the signup verification code. Always responds generically; only
+// sends when an unverified account exists. 60s cooldown between sends.
+authRouter.post("/resend-verification", async (req, res, next) => {
+  const { email } = req.body ?? {};
+  const clean = cleanEmail(email);
+
+  if (!EMAIL_RE.test(clean)) {
+    return res.status(400).json({ error: "A valid email is required" });
+  }
+
+  try {
+    const user = await findByEmail(clean);
+    if (user && !compare(Number(user.is_deleted), 1) && !compare(Number(user.email_verified), 1)) {
+      const wait = await cooldownRemaining(db, user.id, "verify");
+      if (wait > 0) {
+        return res
+          .status(429)
+          .json({ error: "Please wait before requesting another code", retryAfter: Math.ceil(wait / 1000) });
+      }
+      try {
+        await issueAndSend(user, "verify");
+      } catch (err) {
+        return next(err);
+      }
+    }
+    res.json({ data: { ok: true, message: "If an account exists for this email, a verification code has been sent." } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Request a password reset code. Enumeration-safe: identical response whether
+// or not the account exists.
+authRouter.post("/forgot-password", async (req, res, next) => {
+  const { email } = req.body ?? {};
+  const clean = cleanEmail(email);
+
+  if (!EMAIL_RE.test(clean)) {
+    return res.status(400).json({ error: "A valid email is required" });
+  }
+
+  try {
+    const user = await findByEmail(clean);
+    if (user && !compare(Number(user.is_deleted), 1)) {
+      const wait = await cooldownRemaining(db, user.id, "reset");
+      if (wait === 0) {
+        try {
+          await issueAndSend(user, "reset");
+        } catch (err) {
+          return next(err);
+        }
+      }
+    }
+    res.json({ data: { ok: true, message: "If an account exists for this email, a password reset code has been sent." } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Set a new password using a reset code. Single-use, 30-minute expiry.
+authRouter.post("/reset-password", async (req, res, next) => {
+  const { email, code, new_password } = req.body ?? {};
+  const clean = cleanEmail(email);
+  const cleanCode = typeof code === "string" ? code.trim() : "";
+
+  if (!EMAIL_RE.test(clean)) {
+    return res.status(400).json({ error: "A valid email is required" });
+  }
+  if (!CODE_RE.test(cleanCode)) {
+    return res.status(400).json({ error: "Enter the 6-digit code from your email" });
+  }
+  if (!isValidPassword(new_password)) {
+    return res.status(400).json({
+      error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters and contain a letter and a number`,
+    });
+  }
+
+  try {
+    const user = await findByEmail(clean);
+    if (!user || compare(Number(user.is_deleted), 1)) {
+      return res.status(400).json({ error: "Invalid or expired code" });
+    }
+
+    const result = await consumeCode(db, user.id, "reset", cleanCode);
+    if (result.ok) {
+      const password_hash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
+      // Revoke every outstanding session — a reset invalidates old logins.
+      await db
+        .update(users)
+        .set({ password_hash, token_version: user.token_version + 1 })
+        .where(eq(users.id, user.id))
+        .run();
+      clearFailures(user.username);
+      return res.json({ data: { ok: true } });
+    }
+    if (result.reason === "code" && result.left > 0) {
+      return res.status(400).json({
+        error: `Invalid code — ${result.left} ${result.left === 1 ? "attempt" : "attempts"} left`,
+      });
+    }
+    return res.status(400).json({ error: "Invalid or expired code" });
   } catch (err) {
     next(err);
   }

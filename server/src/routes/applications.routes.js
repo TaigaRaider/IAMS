@@ -4,6 +4,9 @@ import { db } from "../db.js";
 import { applications, users, roles } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
 import { compare } from "../utils/compare.js";
+import { notify, notifyAdmins } from "../utils/notify.js";
+import { sendMail } from "../utils/mailer.js";
+import { applicationStatusEmail } from "../utils/email-templates.js";
 
 const applicationRouter = Router();
 
@@ -78,8 +81,16 @@ applicationRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res
   }
   try {
     const existing = await db
-      .select({ id: applications.id, applicant_id: applications.applicant_id })
+      .select({
+        id: applications.id,
+        applicant_id: applications.applicant_id,
+        applicant_name: users.full_name,
+        applicant_email: users.email,
+        role_title: roles.title,
+      })
       .from(applications)
+      .leftJoin(users, eq(users.id, applications.applicant_id))
+      .leftJoin(roles, eq(roles.id, applications.role_id))
       .where(eq(applications.id, Number(req.params.id)))
       .get();
     if (!existing) {
@@ -97,7 +108,61 @@ applicationRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res
         .where(eq(users.id, existing.applicant_id))
         .run();
     }
+    notify(
+      existing.applicant_id,
+      "application",
+      `Your application for ${existing.role_title} is now ${status}`,
+    );
+    void sendMail({
+      to: existing.applicant_email,
+      subject: `Application ${status} — ${existing.role_title}`,
+      html: applicationStatusEmail({
+        name: existing.applicant_name.split(" ")[0],
+        roleTitle: existing.role_title,
+        status,
+      }),
+    });
     res.json({ data: { id: Number(req.params.id) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Withdraw an application. Only the applicant, and only while it's still in
+// review — once an application has advanced (Shortlisted+) the process owns
+// it. Hard delete: interviews/offers can't exist before Shortlisting.
+applicationRouter.delete("/:id", verifyAuth, async (req, res, next) => {
+  try {
+    const existing = await db
+      .select({
+        id: applications.id,
+        applicant_id: applications.applicant_id,
+        status: applications.status,
+        role_title: roles.title,
+        applicant_name: users.full_name,
+      })
+      .from(applications)
+      .leftJoin(users, eq(users.id, applications.applicant_id))
+      .leftJoin(roles, eq(roles.id, applications.role_id))
+      .where(eq(applications.id, Number(req.params.id)))
+      .get();
+    if (!existing) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+    if (!compare(Number(existing.applicant_id), Number(req.user.sub))) {
+      return res.status(403).json({ error: "You can only withdraw your own application" });
+    }
+    if (!compare(existing.status, "In Review")) {
+      return res.status(400).json({
+        error: "This application has already advanced and can no longer be withdrawn",
+      });
+    }
+    await db.delete(applications).where(eq(applications.id, existing.id)).run();
+    notifyAdmins(
+      "application",
+      `${existing.applicant_name} withdrew their application for ${existing.role_title}`,
+    );
+    res.json({ data: { ok: true } });
   } catch (err) {
     next(err);
   }

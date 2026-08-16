@@ -178,7 +178,7 @@ function SearchResults() {
           <Section icon={BadgeCheck} title="My Offers">
             {offers.filter((o) => matches([o.role_title, o.status], qLower)).map((o) => (
               <li key={o.id} className="search-item">
-                <Link to="/applicant" className="search-link">
+                <Link to="/applicant/offers" className="search-link">
                   <strong>{o.role_title}</strong>
                   <span>{o.status}</span>
                 </Link>

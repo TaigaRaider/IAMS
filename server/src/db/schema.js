@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, unique, uniqueIndex, index } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable(
   "users",
@@ -16,6 +16,8 @@ export const users = sqliteTable(
       .default("applicant"),
     is_deactivated: integer("is_deactivated").notNull().default(0),
     is_deleted: integer("is_deleted").notNull().default(0),
+    email_verified: integer("email_verified").notNull().default(0),
+    token_version: integer("token_version").notNull().default(0),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -160,6 +162,25 @@ export const offerMessages = sqliteTable(
   },
 );
 
+export const authTokens = sqliteTable(
+  "auth_tokens",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    user_id: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    kind: text("kind", { enum: ["verify", "reset"] }).notNull(),
+    token_hash: text("token_hash").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    expires_at: text("expires_at").notNull(),
+    used_at: text("used_at"),
+    created_at: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [index("auth_tokens_user_kind_idx").on(t.user_id, t.kind)],
+);
+
 export const internTasks = sqliteTable(
   "intern_tasks",
   {
@@ -179,4 +200,23 @@ export const internTasks = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
+);
+
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    user_id: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    kind: text("kind", {
+      enum: ["application", "interview", "offer", "task", "account"],
+    }).notNull(),
+    message: text("message").notNull(),
+    is_read: integer("is_read").notNull().default(0),
+    created_at: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [index("notifications_user_read_idx").on(t.user_id, t.is_read)],
 );

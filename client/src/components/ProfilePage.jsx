@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Power, Smile, PenLine, Sparkles, User, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Power, Smile, PenLine, Sparkles, User, BadgeCheck, KeyRound } from "lucide-react";
 import { api, getSession, logout, saveSession } from "../api";
 import "./ProfilePage.css";
 
@@ -16,6 +16,11 @@ function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editSuccess, setEditSuccess] = useState(false);
+
+  // Change password state
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState(null);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -44,22 +49,55 @@ function ProfilePage() {
     })();
   }, [handleUnauthorized]);
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     setBusy(true);
-    // Simulate an API call
-    setTimeout(() => {
-      setProfile((prev) => ({ ...prev, full_name: editName }));
-      // Also update local session so it reflects globally until page refresh
+    setEditSuccess(false);
+    try {
+      const updated = await api("/auth/account/profile", {
+        method: "PATCH",
+        body: { full_name: editName },
+      });
+      setProfile((prev) => ({ ...prev, full_name: updated.full_name }));
       const currSession = getSession();
       if (currSession) {
-        saveSession({ ...currSession, full_name: editName });
+        saveSession({ ...currSession, full_name: updated.full_name });
       }
-      setBusy(false);
       setIsEditing(false);
       setEditSuccess(true);
       setTimeout(() => setEditSuccess(false), 3000);
-    }, 600);
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    if (pwForm.next !== pwForm.confirm) {
+      setPwMsg({ type: "error", text: "New passwords don't match" });
+      return;
+    }
+    setPwBusy(true);
+    setPwMsg(null);
+    try {
+      await api("/auth/account/password", {
+        method: "PATCH",
+        body: { current_password: pwForm.current, new_password: pwForm.next },
+      });
+      // The change revokes this session server-side — sign in again with the
+      // new password.
+      setPwMsg({ type: "success", text: "Password changed — signing you out..." });
+      setTimeout(() => {
+        logout();
+        navigate("/login", { replace: true });
+      }, 1200);
+    } catch (err) {
+      if (!handleUnauthorized(err)) setPwMsg({ type: "error", text: err.message });
+    } finally {
+      setPwBusy(false);
+    }
   };
 
   const deactivateAccount = async () => {
@@ -104,7 +142,7 @@ function ProfilePage() {
       {error && <p className="form-error">{error}</p>}
       {editSuccess && (
         <p className="form-success" style={{ color: "var(--success-color, #15803d)", background: "var(--success-bg, #dcfce7)", padding: "12px", borderRadius: "8px" }}>
-          Profile updated successfully! (UI only)
+          Profile updated successfully!
         </p>
       )}
 
@@ -174,6 +212,65 @@ function ProfilePage() {
             </div>
           </dl>
         )}
+      </div>
+
+      <div className="card profile-card security-card">
+        <div className="security-header">
+          <KeyRound size={18} className="security-icon" />
+          <h2 className="cute-section-title">Security</h2>
+        </div>
+        <p className="muted security-note">
+          Change your password. You'll be asked for your current password to
+          confirm it's really you.
+        </p>
+        {pwMsg && (
+          <p className={`security-msg ${pwMsg.type}`}>{pwMsg.text}</p>
+        )}
+        <form onSubmit={changePassword} className="access-form security-form">
+          <div className="cute-form-group">
+            <label htmlFor="pw-current">Current password</label>
+            <input
+              id="pw-current"
+              className="field cute-input"
+              type="password"
+              value={pwForm.current}
+              onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))}
+              required
+              autoComplete="current-password"
+            />
+          </div>
+          <div className="cute-form-group">
+            <label htmlFor="pw-new">New password</label>
+            <input
+              id="pw-new"
+              className="field cute-input"
+              type="password"
+              value={pwForm.next}
+              onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="cute-form-group">
+            <label htmlFor="pw-confirm">Confirm new password</label>
+            <input
+              id="pw-confirm"
+              className="field cute-input"
+              type="password"
+              value={pwForm.confirm}
+              onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="cute-form-actions">
+            <button type="submit" className="btn cute-btn-primary" disabled={pwBusy}>
+              {pwBusy ? "Changing..." : "Change Password"}
+            </button>
+          </div>
+        </form>
       </div>
 
       <div className="card profile-card deactivate-danger-card">

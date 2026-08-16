@@ -4,6 +4,8 @@ import ApplicantDashboard from "./components/ApplicantDashboard.jsx";
 import InternDashboard from "./components/InternDashboard.jsx";
 import { AuthPage } from "./screens/AuthPage";
 import { IntroPage } from "./screens/IntroPage.jsx";
+import VerifyPage from "./screens/VerifyPage.jsx";
+import ResetPasswordPage from "./screens/ResetPasswordPage.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
 import ProfilePage from "./components/ProfilePage.jsx";
 import AccountStatus from "./components/AccountStatus.jsx";
@@ -20,6 +22,8 @@ function App() {
       <Route path="/" element={<IntroPage />} />
       <Route path="/signup" element={<AuthPage mode="signup" />} />
       <Route path="/login" element={<AuthPage mode="login" />} />
+      <Route path="/verify" element={<VerifyPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         path="/dashboard/*"
         element={

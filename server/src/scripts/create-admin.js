@@ -15,7 +15,7 @@ const email = `${username}@iams.local`;
 try {
   const result = await db
     .insert(users)
-    .values({ full_name: fullName ?? "Admin", email, username, password_hash, user_role: "admin" })
+    .values({ full_name: fullName ?? "Admin", email, username, password_hash, user_role: "admin", email_verified: 1 })
     .run();
   console.log(`Admin '${username}' created with id ${Number(result.lastInsertRowid)}`);
 } catch (err) {

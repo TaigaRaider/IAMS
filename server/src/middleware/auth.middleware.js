@@ -39,7 +39,11 @@ export async function verifyAuth(req, res, next) {
   // confined to account-management endpoints only.
   try {
     const account = await db
-      .select({ is_deleted: users.is_deleted, is_deactivated: users.is_deactivated })
+      .select({
+        is_deleted: users.is_deleted,
+        is_deactivated: users.is_deactivated,
+        token_version: users.token_version,
+      })
       .from(users)
       .where(eq(users.id, Number(req.user.sub)))
       .get();
@@ -50,6 +54,14 @@ export async function verifyAuth(req, res, next) {
       return res.status(401).json({ error: "Account doesn't exist" });
     }
     req.user.is_deactivated = compare(Number(account.is_deactivated), 1);
+
+    // Session revocation: every password change/reset bumps token_version, and
+    // a token is only valid while its version matches the account's. Tokens
+    // minted before this versioning existed carry no `ver` claim at all, so
+    // they fail this check too — the user signs in again once.
+    if (!compare(Number(req.user.ver ?? -1), Number(account.token_version))) {
+      return res.status(401).json({ error: "Token revoked — please sign in again" });
+    }
   } catch {
     return next(new Error("Database unavailable"));
   }
