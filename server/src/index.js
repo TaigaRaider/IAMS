@@ -11,6 +11,7 @@ import { offerRouter } from "./routes/offers.routes.js";
 import { roleRouter } from "./routes/roles.routes.js";
 import { applicationRouter } from "./routes/applications.routes.js";
 import { internRouter } from "./routes/interns.routes.js";
+import { notificationRouter } from "./routes/notifications.routes.js";
 
 config();
 
@@ -20,11 +21,58 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   );
 }
 
+// A transient failure (e.g. Turso DNS hiccup) must never kill the process.
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason instanceof Error ? reason.stack : reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err.stack ?? err);
+});
+
 const app = express();
 
 app.disable("x-powered-by");
-app.use(helmet({ contentSecurityPolicy: false }));
+
+// Behind a reverse proxy (Cloudflare, nginx, Render, ...) req.ip is the
+// proxy's address unless we opt into trusting X-Forwarded-For. Rate limiters
+// key on req.ip, so set TRUST_PROXY=<hops> in production to make them see the
+// real client address. Leave unset in local dev (all traffic comes in via the
+// Vite proxy on 127.0.0.1).
+if (process.env.TRUST_PROXY) {
+  app.set("trust proxy", Number(process.env.TRUST_PROXY) || 1);
+}
+
+const isProd = process.env.NODE_ENV === "production";
+
+app.use(
+  helmet({
+    contentSecurityPolicy: isProd
+      ? {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:"],
+            fontSrc: ["'self'", "data:"],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+          },
+        }
+      : false,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    crossOriginEmbedderPolicy: false,
+  }),
+);
 app.use(cookieParser());
+
+// Auth-sensitive API responses must never be cached by intermediaries.
+app.use("/api", (_req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
 app.use((req, res, next) => {
   const start = Date.now();
   res.on("finish", () => {
@@ -72,8 +120,28 @@ const signupLimiter = rateLimit({
   handler: jsonError("Too many accounts created from this address. Try again later."),
 });
 
+const codeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  handler: jsonError("Too many attempts. Please try again later."),
+});
+
+const resendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  handler: jsonError("Too many requests. Please try again later."),
+});
+
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/signup", signupLimiter);
+app.use("/api/auth/verify-email", codeLimiter);
+app.use("/api/auth/reset-password", codeLimiter);
+app.use("/api/auth/resend-verification", resendLimiter);
+app.use("/api/auth/forgot-password", resendLimiter);
 app.use("/api", apiLimiter);
 
 app.use("/api/auth", authRouter);
@@ -82,7 +150,8 @@ app.use("/api/interviews", interviewRouter);
 app.use("/api/offers", offerRouter);
 app.use("/api/roles", roleRouter);
 app.use("/api/applications", applicationRouter);
-app.use("/api", internRouter);
+app.use("/api/interns", internRouter);
+app.use("/api/notifications", notificationRouter);
 
 app.get("/", (req, res) => {
   res.send("This is BACKEND...HAHAHAHAHAHAHAH");

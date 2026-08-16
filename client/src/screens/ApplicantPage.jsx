@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Check, Clock, X, Briefcase, FileText, UserCheck } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
+import OfferCard from "../components/OfferCard.jsx";
 import "./ApplicantPage.css";
 
 const STATUS_INFO = {
@@ -42,11 +43,8 @@ function ApplicantPage() {
   const [roles, setRoles] = useState([]);
   const [error, setError] = useState("");
   const [applying, setApplying] = useState(null);
-  const [accepting, setAccepting] = useState(false);
-  const [declining, setDeclining] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-  const [requestOpen, setRequestOpen] = useState(false);
-  const [requestMessage, setRequestMessage] = useState("");
+  const [confirmingWithdraw, setConfirmingWithdraw] = useState(null);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   const handleUnauthorized = useCallback((err) => {
     if (String(err.message).includes("token") || String(err.message).includes("401")) {
@@ -131,66 +129,29 @@ function ApplicantPage() {
     }
   };
 
-  const acceptOffer = async () => {
-    if (!latestOffer) return;
-    setAccepting(true);
-    setError("");
-    try {
-      await api(`/offers/${latestOffer.id}/accept`, { method: "POST" });
-      setOffers((prev) =>
-        prev.map((o) =>
-          o.id === latestOffer.id ? { ...o, status: "Accepted" } : o,
-        ),
-      );
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-    } finally {
-      setAccepting(false);
-    }
-  };
-
-  const declineOffer = async () => {
-    if (!latestOffer) return;
-    setDeclining(true);
-    setError("");
-    try {
-      await api(`/offers/${latestOffer.id}/decline`, { method: "POST" });
-      setOffers((prev) =>
-        prev.map((o) =>
-          o.id === latestOffer.id ? { ...o, status: "Declined" } : o,
-        ),
-      );
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-    } finally {
-      setDeclining(false);
-    }
-  };
-
-  const requestChanges = async () => {
-    if (!latestOffer || !requestMessage.trim()) return;
-    setRequesting(true);
-    setError("");
-    try {
-      await api(`/offers/${latestOffer.id}/request-changes`, {
-        method: "POST",
-        body: { message: requestMessage.trim() },
-      });
-      setOffers((prev) =>
-        prev.map((o) =>
-          o.id === latestOffer.id ? { ...o, status: "In Negotiation" } : o,
-        ),
-      );
-      setRequestMessage("");
-      setRequestOpen(false);
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-    } finally {
-      setRequesting(false);
-    }
-  };
-
   const appliedRoleIds = new Set(applications.map((a) => a.role_id));
+
+  const withdraw = async (app) => {
+    setWithdrawing(true);
+    setError("");
+    try {
+      await api(`/applications/${app.id}`, { method: "DELETE" });
+      setApplications(await api("/applications"));
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setWithdrawing(false);
+      setConfirmingWithdraw(null);
+    }
+  };
+
+  const onOfferStatusChange = async () => {
+    try {
+      setOffers(await api("/offers"));
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    }
+  };
 
   return (
     <div className="applicant-page">
@@ -214,192 +175,21 @@ function ApplicantPage() {
             Open intern dashboard
           </button>
         )}
+        {offers.length > 0 && (
+          <Link to="/applicant/offers" className="view-all">
+            View all offers ({offers.length})
+          </Link>
+        )}
       </div>
 
       {error && <p className="form-error">{error}</p>}
 
       {latestOffer && (
-        <section className="card offer-card">
-          <div className="card-head">
-            <h2>Job Offer</h2>
-            <span
-              className={`status ${
-                compare(latestOffer.status, "Accepted") ||
-                compare(latestOffer.status, "Confirmed")
-                  ? "accepted"
-                  : compare(latestOffer.status, "Declined")
-                    ? "rejected"
-                    : "pending"
-              }`}
-            >
-              {latestOffer.status}
-            </span>
-          </div>
-
-          {latestOffer.current_revision && (
-            <div className="offer-terms">
-              <div className="term-line">
-                <span className="term-label">Position</span>
-                <strong className="term-value">
-                  {latestOffer.current_revision.position_title ?? latest.role_title}
-                </strong>
-              </div>
-              <div className="term-line">
-                <span className="term-label">Compensation</span>
-                <strong className="term-value">
-                  {latestOffer.current_revision.compensation}
-                </strong>
-              </div>
-              {latestOffer.current_revision.duration && (
-                <div className="term-line">
-                  <span className="term-label">Duration</span>
-                  <strong className="term-value">
-                    {latestOffer.current_revision.duration}
-                  </strong>
-                </div>
-              )}
-              {latestOffer.current_revision.start_date && (
-                <div className="term-line">
-                  <span className="term-label">Start date</span>
-                  <strong className="term-value">
-                    {latestOffer.current_revision.start_date}
-                  </strong>
-                </div>
-              )}
-              {latestOffer.current_revision.expiry_date && (
-                <div className="term-line">
-                  <span className="term-label">Respond by</span>
-                  <strong className="term-value">
-                    {latestOffer.current_revision.expiry_date}
-                  </strong>
-                </div>
-              )}
-              <div className="term-section">
-                <span className="term-label">Task narration</span>
-                <p>{latestOffer.current_revision.narration}</p>
-              </div>
-              <div className="term-section">
-                <span className="term-label">Limitations &amp; expectations</span>
-                <p>{latestOffer.current_revision.terms}</p>
-              </div>
-            </div>
-          )}
-
-          {compare(latestOffer.status, "Extended") && (
-            <>
-              <p>
-                An offer has been extended for <strong>{latest.role_title}</strong>.
-                Review the terms above. You can accept, decline, or request
-                changes before deciding.
-              </p>
-              <div className="offer-actions">
-                <button className="apply-btn" onClick={acceptOffer} disabled={accepting}>
-                  {accepting ? "Accepting..." : "Accept Offer"}
-                </button>
-                <button
-                  className="btn-ghost"
-                  onClick={() => setRequestOpen((v) => !v)}
-                  disabled={accepting || declining}
-                >
-                  Request changes
-                </button>
-                <button
-                  className="btn-ghost"
-                  onClick={declineOffer}
-                  disabled={accepting || declining}
-                >
-                  {declining ? "Declining..." : "Decline"}
-                </button>
-              </div>
-              {requestOpen && (
-                <div className="request-box">
-                  <textarea
-                    className="field"
-                    rows={3}
-                    value={requestMessage}
-                    onChange={(e) => setRequestMessage(e.target.value)}
-                    placeholder="Tell the team what you'd like reviewed or changed…"
-                  />
-                  <button
-                    className="submit-btn"
-                    onClick={requestChanges}
-                    disabled={requesting || !requestMessage.trim()}
-                  >
-                    {requesting ? "Sending..." : "Send request"}
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-
-          {compare(latestOffer.status, "In Negotiation") && (
-            <>
-              <p>
-                The team is reviewing your request. You can still accept the
-                current terms, or decline the offer.
-              </p>
-              <div className="offer-actions">
-                <button className="apply-btn" onClick={acceptOffer} disabled={accepting}>
-                  {accepting ? "Accepting..." : "Accept Offer"}
-                </button>
-                <button
-                  className="btn-ghost"
-                  onClick={declineOffer}
-                  disabled={accepting || declining}
-                >
-                  {declining ? "Declining..." : "Decline"}
-                </button>
-              </div>
-            </>
-          )}
-
-          {compare(latestOffer.status, "Final") && (
-            <>
-              <p>
-                This is the team's final offer. Accept it to become an intern —
-                it can no longer be negotiated.
-              </p>
-              <div className="offer-actions">
-                <button className="apply-btn" onClick={acceptOffer} disabled={accepting}>
-                  {accepting ? "Accepting..." : "Accept Offer"}
-                </button>
-                <button
-                  className="btn-ghost"
-                  onClick={declineOffer}
-                  disabled={accepting || declining}
-                >
-                  {declining ? "Declining..." : "Decline"}
-                </button>
-              </div>
-            </>
-          )}
-
-          {compare(latestOffer.status, "Accepted") && (
-            <>
-              <p>
-                Offer accepted! We're waiting on the final confirmation from the
-                team before you become an intern. This page reloads automatically
-                once it goes through.
-              </p>
-            </>
-          )}
-
-          {compare(latestOffer.status, "Confirmed") && (
-            <>
-              <p>Offer confirmed — you're hired! Welcome aboard.</p>
-              <button
-                className="apply-btn"
-                onClick={() => navigate("/intern", { replace: true })}
-              >
-                Open intern dashboard
-              </button>
-            </>
-          )}
-
-          {compare(latestOffer.status, "Declined") && (
-            <p>This offer was declined.</p>
-          )}
-        </section>
+        <OfferCard
+          offer={latestOffer}
+          onStatusChange={onOfferStatusChange}
+          onAuthError={handleUnauthorized}
+        />
       )}
 
       <div className="applicant-grid">
@@ -490,9 +280,40 @@ function ApplicantPage() {
                     Applied for <strong>{app.role_title}</strong>
                   </p>
                 </div>
-                <span className={`status ${statusClass(app.status)}`}>
-                  {app.status}
-                </span>
+                {compare(app.status, "In Review") &&
+                  confirmingWithdraw === app.id ? (
+                  <div className="withdraw-confirm">
+                    <span className="muted">Withdraw this application?</span>
+                    <button
+                      className="withdraw-btn"
+                      onClick={() => withdraw(app)}
+                      disabled={withdrawing}
+                    >
+                      {withdrawing ? "Withdrawing..." : "Yes, withdraw"}
+                    </button>
+                    <button
+                      className="btn ghost-btn"
+                      onClick={() => setConfirmingWithdraw(null)}
+                      disabled={withdrawing}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="message-actions">
+                    <span className={`status ${statusClass(app.status)}`}>
+                      {app.status}
+                    </span>
+                    {compare(app.status, "In Review") && (
+                      <button
+                        className="withdraw-btn"
+                        onClick={() => setConfirmingWithdraw(app.id)}
+                      >
+                        Withdraw
+                      </button>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

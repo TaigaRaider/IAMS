@@ -1,0 +1,62 @@
+.verify-notice {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.code-field {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 10px;
+  font-variant-numeric: tabular-nums;
+  caret-color: var(--primary);
+  padding: 12px 8px;
+  margin-bottom: 15px;
+}
+
+.verify-resend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.verify-resend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.verify-resend:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.verify-login-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.verify-footer {
+  margin-top: 18px;
+}
+
+@media (max-width: 768px) {
+  .verify-page .brandside-wrap {
+    display: none;
+  }
+}

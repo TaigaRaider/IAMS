@@ -88,6 +88,17 @@
   text-decoration: underline;
 }
 
+.verified-banner {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .password-input-wrapper {
   position: relative;
   width: 100%;

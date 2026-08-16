@@ -5,6 +5,9 @@ import { db } from "../db.js";
 import { interviews, applications, users, roles } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
 import { compare } from "../utils/compare.js";
+import { notify } from "../utils/notify.js";
+import { sendMail } from "../utils/mailer.js";
+import { interviewEmail } from "../utils/email-templates.js";
 
 const interviewRouter = Router();
 
@@ -77,8 +80,16 @@ interviewRouter.post("/", verifyAuth, async (req, res, next) => {
 
   try {
     const application = await db
-      .select({ id: applications.id, applicant_id: applications.applicant_id })
+      .select({
+        id: applications.id,
+        applicant_id: applications.applicant_id,
+        applicant_name: users.full_name,
+        applicant_email: users.email,
+        role_title: roles.title,
+      })
       .from(applications)
+      .leftJoin(users, eq(users.id, applications.applicant_id))
+      .leftJoin(roles, eq(roles.id, applications.role_id))
       .where(eq(applications.id, applicationId))
       .get();
     if (!application) {
@@ -113,6 +124,21 @@ interviewRouter.post("/", verifyAuth, async (req, res, next) => {
         status: "Pending",
       })
       .run();
+    notify(
+      application.applicant_id,
+      "interview",
+      `An interview for ${application.role_title} has been scheduled for ${scheduled_at}`,
+    );
+    void sendMail({
+      to: application.applicant_email,
+      subject: `Interview scheduled — ${application.role_title}`,
+      html: interviewEmail({
+        name: application.applicant_name.split(" ")[0],
+        roleTitle: application.role_title,
+        scheduledAt: scheduled_at,
+        status: "Pending",
+      }),
+    });
     res.status(201).json({ data: { id: Number(result.lastInsertRowid) } });
   } catch (err) {
     next(err);
@@ -126,14 +152,44 @@ interviewRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res, 
     return res.status(400).json({ error: "Invalid interview status" });
   }
   try {
-    const result = await db
+    const existing = await db
+      .select({
+        id: interviews.id,
+        applicant_id: applications.applicant_id,
+        applicant_name: users.full_name,
+        applicant_email: users.email,
+        role_title: roles.title,
+        scheduled_at: interviews.scheduled_at,
+      })
+      .from(interviews)
+      .leftJoin(applications, eq(applications.id, interviews.application_id))
+      .leftJoin(users, eq(users.id, applications.applicant_id))
+      .leftJoin(roles, eq(roles.id, applications.role_id))
+      .where(eq(interviews.id, Number(req.params.id)))
+      .get();
+    if (!existing) {
+      return res.status(404).json({ error: "Interview not found" });
+    }
+    await db
       .update(interviews)
       .set({ status })
       .where(eq(interviews.id, Number(req.params.id)))
       .run();
-    if (compare(result.rowsAffected, 0)) {
-      return res.status(404).json({ error: "Interview not found" });
-    }
+    notify(
+      existing.applicant_id,
+      "interview",
+      `Your interview for ${existing.role_title} is now ${status}`,
+    );
+    void sendMail({
+      to: existing.applicant_email,
+      subject: `Interview ${status} — ${existing.role_title}`,
+      html: interviewEmail({
+        name: existing.applicant_name.split(" ")[0],
+        roleTitle: existing.role_title,
+        scheduledAt: existing.scheduled_at,
+        status,
+      }),
+    });
     res.json({ data: { id: Number(req.params.id), status } });
   } catch (err) {
     next(err);

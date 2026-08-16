@@ -11,6 +11,9 @@ import {
 } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
 import { compare } from "../utils/compare.js";
+import { notify, notifyAdmins } from "../utils/notify.js";
+import { sendMail } from "../utils/mailer.js";
+import { offerEmail } from "../utils/email-templates.js";
 
 const offerRouter = Router();
 
@@ -22,6 +25,7 @@ const offerSelect = {
   created_at: offers.created_at,
   applicant_id: applications.applicant_id,
   applicant_name: users.full_name,
+  applicant_email: users.email,
   role_title: roles.title,
 };
 
@@ -90,15 +94,11 @@ function parseTerms(body) {
 
 async function loadOfferWithApplicant(id) {
   return db
-    .select({
-      id: offers.id,
-      application_id: offers.application_id,
-      status: offers.status,
-      current_revision_id: offers.current_revision_id,
-      applicant_id: applications.applicant_id,
-    })
+    .select(offerSelect)
     .from(offers)
     .leftJoin(applications, eq(applications.id, offers.application_id))
+    .leftJoin(users, eq(users.id, applications.applicant_id))
+    .leftJoin(roles, eq(roles.id, applications.role_id))
     .where(eq(offers.id, id))
     .get();
 }
@@ -392,6 +392,20 @@ offerRouter.post("/:id/extend", verifyAuth, requireAdmin, async (req, res, next)
       .set({ status: "Extended" })
       .where(eq(offers.id, existing.id))
       .run();
+    notify(
+      existing.applicant_id,
+      "offer",
+      `An offer for ${existing.role_title} has been extended to you — review it in the Applicant dashboard`,
+    );
+    void sendMail({
+      to: existing.applicant_email,
+      subject: `You have an offer — ${existing.role_title}`,
+      html: offerEmail({
+        name: existing.applicant_name.split(" ")[0],
+        roleTitle: existing.role_title,
+        status: "Extended",
+      }),
+    });
     res.json({ data: { id: existing.id, status: "Extended" } });
   } catch (err) {
     next(err);
@@ -535,13 +549,45 @@ offerRouter.post("/:id/final", verifyAuth, requireAdmin, async (req, res, next) 
         message: String(message).trim(),
       });
     }
+    notify(
+      existing.applicant_id,
+      "offer",
+      `A final offer for ${existing.role_title} is ready for your review`,
+    );
     res.json({ data: { id: existing.id, status: "Final" } });
   } catch (err) {
     next(err);
   }
 });
 
+// Marks a list of offers (and their current revisions) as Declined.
+async function declineOffers(offerIds) {
+  if (offerIds.length === 0) return;
+  for (const offerId of offerIds) {
+    const row = await db
+      .select({ current_revision_id: offers.current_revision_id })
+      .from(offers)
+      .where(eq(offers.id, offerId))
+      .get();
+    if (row?.current_revision_id != null) {
+      await db
+        .update(offerRevisions)
+        .set({ status: "declined" })
+        .where(eq(offerRevisions.id, row.current_revision_id))
+        .run();
+      await supersedeOthers(offerId, row.current_revision_id);
+    }
+  }
+  await db
+    .update(offers)
+    .set({ status: "Declined" })
+    .where(inArray(offers.id, offerIds))
+    .run();
+}
+
 // Candidate accepts. Hiring only happens when an admin confirms (see below).
+// With decline_others set, every other open offer of the candidate is also
+// declined so they don't leave active offers dangling after choosing one.
 offerRouter.post("/:id/accept", verifyAuth, async (req, res, next) => {
   try {
     const existing = await loadOfferWithApplicant(Number(req.params.id));
@@ -567,7 +613,32 @@ offerRouter.post("/:id/accept", verifyAuth, async (req, res, next) => {
       .set({ status: "Accepted" })
       .where(eq(offers.id, existing.id))
       .run();
-    res.json({ data: { id: existing.id, status: "Accepted" } });
+
+    let declinedOthers = 0;
+    if (req.body?.decline_others) {
+      const others = await db
+        .select({ id: offers.id })
+        .from(offers)
+        .leftJoin(applications, eq(applications.id, offers.application_id))
+        .where(
+          and(
+            eq(applications.applicant_id, existing.applicant_id),
+            notInArray(offers.id, [existing.id]),
+            inArray(offers.status, ["Extended", "In Negotiation", "Final"]),
+          ),
+        )
+        .all();
+      await declineOffers(others.map((o) => Number(o.id)));
+      declinedOthers = others.length;
+    }
+
+    res.json({
+      data: { id: existing.id, status: "Accepted", declined_others: declinedOthers },
+    });
+    notifyAdmins(
+      "offer",
+      `${existing.applicant_name} accepted the offer for ${existing.role_title} — ready for confirmation`,
+    );
   } catch (err) {
     next(err);
   }
@@ -598,6 +669,20 @@ offerRouter.post("/:id/confirm", verifyAuth, requireAdmin, async (req, res, next
       .where(eq(applications.id, existing.application_id))
       .run();
     res.json({ data: { id: existing.id, status: "Confirmed" } });
+    notify(
+      existing.applicant_id,
+      "offer",
+      `Congratulations! You've been confirmed for ${existing.role_title} — see your Intern dashboard`,
+    );
+    void sendMail({
+      to: existing.applicant_email,
+      subject: `You're in! ${existing.role_title} confirmed`,
+      html: offerEmail({
+        name: existing.applicant_name.split(" ")[0],
+        roleTitle: existing.role_title,
+        status: "Confirmed",
+      }),
+    });
   } catch (err) {
     next(err);
   }
@@ -616,20 +701,12 @@ offerRouter.post("/:id/decline", verifyAuth, async (req, res, next) => {
     if (!["Extended", "In Negotiation", "Final"].includes(existing.status)) {
       return res.status(400).json({ error: "This offer is not open to decline" });
     }
-    if (existing.current_revision_id != null) {
-      await db
-        .update(offerRevisions)
-        .set({ status: "declined" })
-        .where(eq(offerRevisions.id, existing.current_revision_id))
-        .run();
-      await supersedeOthers(existing.id, existing.current_revision_id);
-    }
-    await db
-      .update(offers)
-      .set({ status: "Declined" })
-      .where(eq(offers.id, existing.id))
-      .run();
+    await declineOffers([existing.id]);
     res.json({ data: { id: existing.id, status: "Declined" } });
+    notifyAdmins(
+      "offer",
+      `${existing.applicant_name} declined the offer for ${existing.role_title}`,
+    );
   } catch (err) {
     next(err);
   }

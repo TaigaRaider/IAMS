@@ -42,6 +42,8 @@ export async function api(path, { method = "GET", body } = {}) {
         }
         const err = new Error(json.error || `Request failed (${res.status})`);
         err.status = res.status;
+        err.code = json.code;
+        err.retryAfter = json.retryAfter;
         throw err;
       }
       return json.data;

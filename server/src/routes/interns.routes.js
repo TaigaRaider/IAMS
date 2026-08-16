@@ -10,6 +10,9 @@ import {
 } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
 import { compare } from "../utils/compare.js";
+import { notify } from "../utils/notify.js";
+import { sendMail } from "../utils/mailer.js";
+import { taskEmail } from "../utils/email-templates.js";
 
 const internRouter = Router();
 
@@ -130,7 +133,7 @@ internRouter.post("/interns/tasks", verifyAuth, requireAdmin, async (req, res, n
   }
   try {
     const user = await db
-      .select({ id: users.id })
+      .select({ id: users.id, full_name: users.full_name, email: users.email })
       .from(users)
       .where(eq(users.id, Number(intern_id)))
       .get();
@@ -147,6 +150,16 @@ internRouter.post("/interns/tasks", verifyAuth, requireAdmin, async (req, res, n
         status: taskStatus,
       })
       .run();
+    notify(user.id, "task", `You've been assigned a new task: ${String(title).slice(0, 200)}`);
+    void sendMail({
+      to: user.email,
+      subject: "New task assigned to you",
+      html: taskEmail({
+        name: user.full_name.split(" ")[0],
+        title: String(title).slice(0, 200),
+        dueDate: due_date ?? null,
+      }),
+    });
     res.status(201).json({ data: { id: Number(result.lastInsertRowid) } });
   } catch (err) {
     next(err);
