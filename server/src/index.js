@@ -150,7 +150,7 @@ app.use("/api/interviews", interviewRouter);
 app.use("/api/offers", offerRouter);
 app.use("/api/roles", roleRouter);
 app.use("/api/applications", applicationRouter);
-app.use("/api/interns", internRouter);
+app.use("/api", internRouter);
 app.use("/api/notifications", notificationRouter);
 
 app.get("/", (req, res) => {
