@@ -52,11 +52,7 @@ function AssignTaskForm({ assignees, initialInternId, onCreated }) {
     }
     setSaving(true);
     try {
-<<<<<<< HEAD
-      await api("/interns/interns/tasks", {
-=======
       await api("/interns/tasks", {
->>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
         method: "POST",
         body: {
           intern_id: Number(internId),
@@ -147,13 +143,8 @@ function AdminTasksPage() {
   const load = useCallback(async () => {
     try {
       const [taskData, internData, appData] = await Promise.all([
-<<<<<<< HEAD
-        api("/interns/interns/tasks"),
-        api("/interns/interns"),
-=======
         api("/interns/tasks"),
         api("/interns"),
->>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
         api("/applications"),
       ]);
       setTasks(taskData);
@@ -192,11 +183,7 @@ function AdminTasksPage() {
     setDeleting(taskId);
     setError("");
     try {
-<<<<<<< HEAD
-      await api(`/interns/interns/tasks/${taskId}`, { method: "DELETE" });
-=======
       await api(`/interns/tasks/${taskId}`, { method: "DELETE" });
->>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
       await load();
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
