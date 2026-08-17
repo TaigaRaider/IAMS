@@ -51,7 +51,7 @@
 .profile-banner {
   height: 120px;
   background: linear-gradient(135deg, var(--primary-soft, #fbc2eb) 0%, var(--primary, #a6c1ee) 100%);
-  position: relative;
+  position: static;
 }
 
 .cute-profile-content {

@@ -3,13 +3,13 @@ import Chart from "chart.js/auto";
 import "./DeptDoughnut.css";
 
 const PALETTE = [
-  "#27272a",
-  "#6d28d9",
-  "#2563eb",
-  "#059669",
-  "#d97706",
-  "#db2777",
+  "#083344",
+  "#0c4a6e",
   "#0891b2",
+  "#0369a1",
+  "#0369a1",
+  "#155e75",
+  "#0284c7",
 ];
 
 function DeptDoughnut({ depts }) {
