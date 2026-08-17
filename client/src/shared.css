@@ -159,6 +159,7 @@
 .skeleton {
   position: relative;
   overflow: hidden;
+<<<<<<< HEAD
   border-radius: 10px;
   background: linear-gradient(
     100deg,
@@ -168,6 +169,24 @@
   );
   background-size: 220% 100%;
   animation: skeleton-shimmer 1.6s linear infinite;
+=======
+  background: #ecebf0;
+  border-radius: 8px;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.75),
+      transparent
+    );
+    transform: translateX(-100%);
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 }
 
 .skeleton-circle {
@@ -176,14 +195,21 @@
 
 @keyframes skeleton-shimmer {
   to {
+<<<<<<< HEAD
     background-position: -220% 0;
+=======
+    transform: translateX(100%);
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
   }
 }
 
 .skeleton-card,
 .skeleton-block {
   pointer-events: none;
+<<<<<<< HEAD
   animation: skeleton-card-breathe 1.8s ease-in-out infinite;
+=======
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 
   &:hover {
     transform: none;
@@ -191,6 +217,7 @@
   }
 }
 
+<<<<<<< HEAD
 @keyframes skeleton-card-breathe {
   0%,
   100% {
@@ -210,6 +237,8 @@
   }
 }
 
+=======
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 .skeleton-cards-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -235,7 +264,10 @@
   gap: 16px;
   padding: 12px 24px;
   background: var(--primary);
+<<<<<<< HEAD
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+=======
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 
   .shell-skeleton-actions {
     margin-left: auto;

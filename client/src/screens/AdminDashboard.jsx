@@ -17,7 +17,10 @@ import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
 import { OverviewSkeleton } from "../components/Skeletons.jsx";import AddRoleForm from "../components/AddRoleForm.jsx";
 import DashboardShell from "../components/DashboardShell.jsx";
+<<<<<<< HEAD
 import DeptDoughnut from "../components/DeptDoughnut.jsx";
+=======
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 import InterviewPage from "../components/InterviewPage.jsx";
 import SearchResults from "../components/SearchResults.jsx";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
@@ -71,6 +74,12 @@ function Overview() {
 
   const recent = applications.slice(0, 4);
   const depts = stats.applicationsByDepartment;
+<<<<<<< HEAD
+=======
+  const maxDeptCount = depts.length
+    ? Math.max(...depts.map((d) => Number(d.count)))
+    : 0;
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 
   return (
     <>
@@ -171,7 +180,25 @@ function Overview() {
               compact
             />
           ) : (
+<<<<<<< HEAD
             <DeptDoughnut depts={depts} />
+=======
+            <ul className="dept-list">
+              {depts.map((dept) => (
+                <li key={dept.department}>
+                  <span>{dept.department}</span>
+                  <div className="bar">
+                    <div
+                      style={{
+                        width: `${maxDeptCount ? (Number(dept.count) / maxDeptCount) * 100 : 0}%`,
+                      }}
+                    ></div>
+                  </div>
+                  <span className="count">{dept.count}</span>
+                </li>
+              ))}
+            </ul>
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
           )}
         </div>
       </div>

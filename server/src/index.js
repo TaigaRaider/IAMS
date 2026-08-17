@@ -150,7 +150,11 @@ app.use("/api/interviews", interviewRouter);
 app.use("/api/offers", offerRouter);
 app.use("/api/roles", roleRouter);
 app.use("/api/applications", applicationRouter);
+<<<<<<< HEAD
 app.use("/api/interns", internRouter);
+=======
+app.use("/api", internRouter);
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 app.use("/api/notifications", notificationRouter);
 
 app.get("/", (req, res) => {

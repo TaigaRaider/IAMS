@@ -6,9 +6,15 @@
   --heading: #08060d;
   --muted: #6b6375;
 
+<<<<<<< HEAD
   --primary: #083344;
   --primary-foreground: #fff;
   --primary-hover: #164e63;
+=======
+  --primary: #27272a;
+  --primary-foreground: #fff;
+  --primary-hover: #404040;
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
   --primary-soft: rgba(39, 39, 42, 0.1);
   --on-primary: rgba(255, 255, 255, 0.15);
   --on-primary-hover: rgba(255, 255, 255, 0.3);

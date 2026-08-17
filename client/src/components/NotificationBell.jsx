@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+<<<<<<< HEAD
 import {
   BadgeCheck,
   Bell,
@@ -11,6 +12,9 @@ import {
   Inbox,
   User,
 } from "lucide-react";
+=======
+import { Bell } from "lucide-react";
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 import { api, getSession } from "../api";
 import { compare } from "../utils/compare";
 import "./NotificationBell.css";
@@ -19,6 +23,7 @@ import "./NotificationBell.css";
 // live without hammering the API.
 const POLL_INTERVAL_MS = 15_000;
 
+<<<<<<< HEAD
 const KIND_META = {
   application: { title: "Application update", icon: FileText },
   interview: { title: "Interview", icon: CalendarDays },
@@ -42,6 +47,16 @@ function timeAgo(iso) {
   return new Date(iso).toLocaleDateString();
 }
 
+=======
+const KIND_TITLES = {
+  application: "Application update",
+  interview: "Interview",
+  offer: "Offer",
+  task: "Task",
+  account: "Account",
+};
+
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 // Where each notification kind leads, per role.
 function navigateTo(role, kind) {
   if (compare(role, "admin")) {
@@ -66,7 +81,10 @@ function NotificationBell() {
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
+<<<<<<< HEAD
   const wrapRef = useRef(null);
+=======
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
   const timerRef = useRef(null);
   const lastRefetchRef = useRef(0);
 
@@ -108,6 +126,7 @@ function NotificationBell() {
     };
   }, [poll, refetchSoon]);
 
+<<<<<<< HEAD
   // Close on outside click or Escape while the panel is open.
   useEffect(() => {
     if (!open) return;
@@ -150,12 +169,32 @@ function NotificationBell() {
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
       >
+=======
+  const openBell = async () => {
+    setOpen((v) => !v);
+    if (unread > 0) {
+      setUnread(0);
+      try {
+        await api("/notifications/read-all", { method: "PATCH" });
+      } catch {
+        // best effort — the next poll corrects the badge
+      }
+    }
+  };
+
+  const role = getSession()?.role;
+
+  return (
+    <div className="bell-wrap">
+      <button className="bell-btn" onClick={openBell} aria-label="Notifications">
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
         <Bell className="bell" />
         {unread > 0 && <span className="bell-badge">{unread > 9 ? "9+" : unread}</span>}
       </button>
       {open && (
         <div className="bell-panel">
           <div className="bell-panel-head">
+<<<<<<< HEAD
             <div className="bell-panel-title">
               <BellRing size={15} />
               <strong>Notifications</strong>
@@ -202,6 +241,29 @@ function NotificationBell() {
                   </li>
                 );
               })}
+=======
+            <strong>Notifications</strong>
+            <span className="muted">{items.length} total</span>
+          </div>
+          {items.length === 0 ? (
+            <p className="bell-empty">Nothing to show yet.</p>
+          ) : (
+            <ul className="bell-list">
+              {items.slice(0, 20).map((item) => (
+                <li key={item.id}>
+                  <button
+                    className="bell-item"
+                    onClick={() => {
+                      setOpen(false);
+                      navigate(navigateTo(role, item.kind));
+                    }}
+                  >
+                    <strong>{KIND_TITLES[item.kind] ?? "Update"}</strong>
+                    <span>{item.message}</span>
+                  </button>
+                </li>
+              ))}
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
             </ul>
           )}
         </div>

@@ -137,7 +137,11 @@ function InternOverview() {
   useEffect(() => {
     (async () => {
       try {
+<<<<<<< HEAD
         setTasks(await api("/interns/interns/tasks"));
+=======
+        setTasks(await api("/interns/tasks"));
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
       } catch (err) {
         if (!handleUnauthorized(err)) setError(err.message);
       }
@@ -146,7 +150,11 @@ function InternOverview() {
 
   const updateTaskStatus = async (task, status) => {
     try {
+<<<<<<< HEAD
       await api(`/interns/interns/tasks/${task.id}`, {
+=======
+      await api(`/interns/tasks/${task.id}`, {
+>>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
         method: "PATCH",
         body: { status },
       });
