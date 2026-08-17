@@ -36,8 +36,6 @@
   }
 }
 
-<<<<<<< HEAD
-=======
 .dept-list {
   list-style: none;
   margin: 0;
@@ -84,7 +82,6 @@
   }
 }
 
->>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 .page-head {
   display: flex;
   align-items: center;
@@ -106,6 +103,7 @@
   padding: 0 1rem;
   background-color: var(--primary);
   border-radius: 10px;
+  margin-bottom: 5px;
   font-size: 15px;
   font-weight: 700;
   color: var(--primary-foreground);
@@ -133,12 +131,9 @@
     box-shadow: 0 0 0 3px var(--primary-soft);
   }
 }
-<<<<<<< HEAD
-=======
 
 @media (max-width: 600px) {
   .dept-list li > span:first-child {
     width: 90px;
   }
 }
->>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654

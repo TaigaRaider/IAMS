@@ -1,10 +1,12 @@
 import { Routes, Route } from "react-router-dom";
 import { FileText, UserRound, CalendarClock, BadgeCheck } from "lucide-react";
+
 import DashboardShell from "./DashboardShell.jsx";
 import SearchResults from "./SearchResults.jsx";
 import ApplicantPage from "../screens/ApplicantPage.jsx";
 import ApplicantOffersPage from "../screens/ApplicantOffersPage.jsx";
 import InterviewPage from "./InterviewPage.jsx";
+import ApplicationFormPage from "../screens/ApplicationFormPage.jsx";
 
 const APPLICANT_NAV = [
   { to: "/applicant", end: true, icon: FileText, label: "My Application" },
@@ -20,6 +22,7 @@ function ApplicantDashboard() {
         <Route index element={<ApplicantPage />} />
         <Route path="offers" element={<ApplicantOffersPage />} />
         <Route path="interviews" element={<InterviewPage />} />
+        <Route path="apply" element={<ApplicationFormPage />} />
         <Route path="search" element={<SearchResults />} />
       </Routes>
     </DashboardShell>

@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -12,6 +13,7 @@ import { roleRouter } from "./routes/roles.routes.js";
 import { applicationRouter } from "./routes/applications.routes.js";
 import { internRouter } from "./routes/interns.routes.js";
 import { notificationRouter } from "./routes/notifications.routes.js";
+import { UPLOADS_DIR, UPLOADS_URL } from "./utils/upload.js";
 
 config();
 
@@ -150,12 +152,12 @@ app.use("/api/interviews", interviewRouter);
 app.use("/api/offers", offerRouter);
 app.use("/api/roles", roleRouter);
 app.use("/api/applications", applicationRouter);
-<<<<<<< HEAD
-app.use("/api/interns", internRouter);
-=======
 app.use("/api", internRouter);
->>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
 app.use("/api/notifications", notificationRouter);
+
+// Uploaded documents (resumes/CVs) are stored on disk and served by filename;
+// filenames are random UUIDs so they aren't enumerable.
+app.use(UPLOADS_URL, express.static(UPLOADS_DIR, { maxAge: "1h" }));
 
 app.get("/", (req, res) => {
   res.send("This is BACKEND...HAHAHAHAHAHAHAH");
@@ -167,6 +169,12 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   console.error(err);
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ error: err.message });
+  }
+  if (err.status && err.status < 500) {
+    return res.status(err.status).json({ error: err.message });
+  }
   res.status(500).json({ error: "Internal server error" });
 });
 

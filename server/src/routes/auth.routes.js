@@ -269,6 +269,13 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
         full_name: users.full_name,
         user_role: users.user_role,
         is_deactivated: users.is_deactivated,
+        phone: users.phone,
+        location: users.location,
+        nationality: users.nationality,
+        date_of_birth: users.date_of_birth,
+        education: users.education,
+        experience: users.experience,
+        skills: users.skills,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -301,6 +308,15 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
             role: "intern",
             full_name: user.full_name,
             deactivated: false,
+            biodata: {
+              phone: user.phone,
+              location: user.location,
+              nationality: user.nationality,
+              date_of_birth: user.date_of_birth,
+              education: user.education,
+              experience: user.experience,
+              skills: user.skills,
+            },
           },
         });
       }
@@ -311,6 +327,15 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
         role: freshRole,
         full_name: user.full_name,
         deactivated: compare(Number(user.is_deactivated), 1),
+        biodata: {
+          phone: user.phone,
+          location: user.location,
+          nationality: user.nationality,
+          date_of_birth: user.date_of_birth,
+          education: user.education,
+          experience: user.experience,
+          skills: user.skills,
+        },
       },
     });
   } catch (err) {
@@ -458,12 +483,32 @@ authRouter.patch("/account/password", verifyAuth, async (req, res, next) => {
   }
 });
 
-// Update the signed-in account's profile (full name). Not sensitive enough
+// Update the signed-in account's profile: full name plus optional biodata
+// fields (kept in sync with application submissions). Not sensitive enough
 // to revoke sessions — the token carries no name; /me returns the fresh one.
 authRouter.patch("/account/profile", verifyAuth, async (req, res, next) => {
   const full_name = typeof req.body?.full_name === "string" ? req.body.full_name.trim() : "";
   if (!full_name || full_name.length > 100) {
     return res.status(400).json({ error: "Full name is required (max 100 characters)" });
+  }
+  let biodata = {};
+  for (const [key, max] of Object.entries({
+    phone: 30,
+    location: 120,
+    nationality: 60,
+    date_of_birth: 30,
+    education: 500,
+    experience: 2000,
+    skills: 500,
+  })) {
+    if (!(key in (req.body ?? {}))) continue;
+    const value = typeof req.body[key] === "string" ? req.body[key].trim() : "";
+    if (value.length > max) {
+      return res
+        .status(400)
+        .json({ error: `${key} is too long (max ${max} characters)` });
+    }
+    biodata[key] = value;
   }
   try {
     const userId = Number(req.user.sub);
@@ -475,8 +520,8 @@ authRouter.patch("/account/profile", verifyAuth, async (req, res, next) => {
     if (!user || compare(Number(user.is_deleted), 1)) {
       return res.status(401).json({ error: "Account doesn't exist" });
     }
-    await db.update(users).set({ full_name }).where(eq(users.id, userId)).run();
-    res.json({ data: { full_name } });
+    await db.update(users).set({ full_name, ...biodata }).where(eq(users.id, userId)).run();
+    res.json({ data: { full_name, ...biodata } });
   } catch (err) {
     next(err);
   }
