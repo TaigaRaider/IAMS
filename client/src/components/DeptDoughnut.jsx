@@ -3,13 +3,13 @@ import Chart from "chart.js/auto";
 import "./DeptDoughnut.css";
 
 const PALETTE = [
-  "#083344",
-  "#0c4a6e",
-  "#0891b2",
-  "#0369a1",
-  "#0369a1",
-  "#155e75",
-  "#0284c7",
+  "#22d3ee",
+  "#f43f5e",
+  "#4ade80",
+  "#facc15",
+  "#14b8a6",
+  "#84cc16",
+  "#a78bfa",
 ];
 
 function DeptDoughnut({ depts }) {
@@ -58,7 +58,11 @@ function DeptDoughnut({ depts }) {
   return (
     <div className="dept-chart">
       <div className="dept-chart-canvas">
-        <canvas ref={canvasRef} role="img" aria-label="Applications by department" />
+        <canvas
+          ref={canvasRef}
+          role="img"
+          aria-label="Applications by department"
+        />
         <div className="dept-chart-center" aria-hidden="true">
           <strong>{total}</strong>
           <span>Applications</span>

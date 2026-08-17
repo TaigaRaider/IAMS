@@ -121,11 +121,12 @@ function AdminRolesPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Roles</h1>
-        <Link to="/dashboard/add" className="add-btn">
+        
+      </div>
+      <Link to="/dashboard/add" className="add-btn">
           <Plus size={16} />
           Add Role
         </Link>
-      </div>
       {error && <p className="form-error">{error}</p>}
       <div className="card table-card roles-table-card">
         {roles.length === 0 ? (

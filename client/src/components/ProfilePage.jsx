@@ -149,10 +149,16 @@ function ProfilePage() {
       <div className="card cute-profile-card">
         <div className="profile-banner"></div>
         <div className="cute-profile-content">
-          <div className="cute-avatar-wrapper">
+          <div className="cute-avatar-wrapper" style={{ position: "relative" }}>
             <div className="cute-avatar">
               <Smile size={42} strokeWidth={2.5} />
             </div>
+            <label className="upload-avatar-btn" title="Upload new picture">
+              <input type="file" accept="image/*" style={{ display: "none" }} />
+              <div className="upload-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              </div>
+            </label>
           </div>
           <div className="cute-profile-info">
             <h2>{profile?.full_name ?? session?.full_name ?? "—"}</h2>

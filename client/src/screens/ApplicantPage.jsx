@@ -112,21 +112,8 @@ function ApplicantPage() {
     ? offers.find((o) => o.application_id === latest.id) ?? null
     : null;
 
-  const apply = async (roleId) => {
-    setApplying(roleId);
-    setError("");
-    try {
-      await api("/applications", {
-        method: "POST",
-        body: { role_id: roleId },
-      });
-      const apps = await api("/applications");
-      setApplications(apps);
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-    } finally {
-      setApplying(null);
-    }
+  const apply = (roleId) => {
+    navigate(`/applicant/apply?role=${roleId}`);
   };
 
   const appliedRoleIds = new Set(applications.map((a) => a.role_id));

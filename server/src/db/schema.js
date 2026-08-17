@@ -18,6 +18,13 @@ export const users = sqliteTable(
     is_deleted: integer("is_deleted").notNull().default(0),
     email_verified: integer("email_verified").notNull().default(0),
     token_version: integer("token_version").notNull().default(0),
+    phone: text("phone"),
+    location: text("location"),
+    nationality: text("nationality"),
+    date_of_birth: text("date_of_birth"),
+    education: text("education"),
+    experience: text("experience"),
+    skills: text("skills"),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -58,6 +65,8 @@ export const applications = sqliteTable(
     })
       .notNull()
       .default("In Review"),
+    resume_path: text("resume_path"),
+    resume_name: text("resume_name"),
     applied_at: text("applied_at")
       .notNull()
       .default(sql`(datetime('now'))`),

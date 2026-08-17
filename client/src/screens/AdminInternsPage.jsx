@@ -235,6 +235,26 @@ function AdminInternsPage() {
                   </span>
                   <span>{selectedIntern.email ?? "—"}</span>
                 </div>
+                {selectedIntern.resume_url && (
+                  <div className="profile-detail-row">
+                    <span>
+                      <FileText size={14} /> Resume
+                    </span>
+                    <span>
+                      <a href={selectedIntern.resume_url} target="_blank" rel="noreferrer" style={{color: 'var(--primary)', textDecoration: 'none'}}>View Resume</a>
+                    </span>
+                  </div>
+                )}
+                {selectedIntern.biodata && (
+                  <div className="profile-detail-row" style={{flexDirection: "column", alignItems: "flex-start", gap: "4px"}}>
+                    <span style={{marginBottom: "4px"}}>
+                      <FileText size={14} /> Biodata / Cover Letter
+                    </span>
+                    <span style={{textAlign: "left", fontSize: "13px", lineHeight: "1.5", whiteSpace: "pre-wrap", background: "var(--background)", padding: "12px", borderRadius: "8px", width: "100%"}}>
+                      {selectedIntern.biodata}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="profile-modal-actions">
