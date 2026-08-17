@@ -46,11 +46,7 @@ function AdminInternsPage() {
   const load = useCallback(async () => {
     try {
       const [internData, offerData] = await Promise.all([
-<<<<<<< HEAD
         api("/interns/interns"),
-=======
-        api("/interns"),
->>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
         api("/offers"),
       ]);
       setInterns(internData);
@@ -70,11 +66,7 @@ function AdminInternsPage() {
     setPromoting(intern.id);
     setError("");
     try {
-<<<<<<< HEAD
       await api(`/interns/interns/users/${intern.id}/role`, {
-=======
-      await api(`/interns/users/${intern.id}/role`, {
->>>>>>> 4ccedddf7cad4e9719e92047c6894a5bb392f654
         method: "PATCH",
         body: { role: "admin" },
       });
