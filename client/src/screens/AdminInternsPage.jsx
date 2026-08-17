@@ -33,7 +33,10 @@ function AdminInternsPage() {
 
   const handleUnauthorized = useCallback(
     (err) => {
-      if (String(err.message).includes("token") || String(err.message).includes("401")) {
+      if (
+        String(err.message).includes("token") ||
+        String(err.message).includes("401")
+      ) {
         logout();
         navigate("/login", { replace: true });
         return true;
@@ -46,7 +49,7 @@ function AdminInternsPage() {
   const load = useCallback(async () => {
     try {
       const [internData, offerData] = await Promise.all([
-        api("/interns/interns"),
+        api("/interns"),
         api("/offers"),
       ]);
       setInterns(internData);
@@ -66,7 +69,7 @@ function AdminInternsPage() {
     setPromoting(intern.id);
     setError("");
     try {
-      await api(`/interns/interns/users/${intern.id}/role`, {
+      await api(`/interns/users/${intern.id}/role`, {
         method: "PATCH",
         body: { role: "admin" },
       });
@@ -122,9 +125,7 @@ function AdminInternsPage() {
                           <strong>{intern.full_name}</strong>
                           <span className="muted-cell">
                             {intern.role_title ?? "—"}
-                            {intern.department
-                              ? ` · ${intern.department}`
-                              : ""}
+                            {intern.department ? ` · ${intern.department}` : ""}
                           </span>
                         </div>
                       </button>
@@ -155,7 +156,9 @@ function AdminInternsPage() {
                         disabled={promoting === intern.id}
                       >
                         <ShieldCheck size={14} />{" "}
-                        {promoting === intern.id ? "Promoting..." : "Make admin"}
+                        {promoting === intern.id
+                          ? "Promoting..."
+                          : "Make admin"}
                       </button>
                     </td>
                   </tr>
@@ -199,7 +202,6 @@ function AdminInternsPage() {
               </div>
             </div>
             <div className="profile-content">
-
               <div className="profile-details">
                 <div className="profile-detail-row">
                   <span>
