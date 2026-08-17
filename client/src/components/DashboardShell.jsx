@@ -30,9 +30,15 @@ function DashboardShell({ navItems, children }) {
     navigate(`${root}/search?q=${encodeURIComponent(q)}`);
   };
 
-  // Clicking the logo acts as a manual refresh: bumping the key remounts the
-  // page subtree below the header so every data effect re-runs.
-  const refreshPage = () => setRefreshNonce((n) => n + 1);
+  // Clicking the logo goes to the role's home page; clicking it while already
+  // home acts as a manual refresh: bumping the key remounts the page subtree
+  // below the header so every data effect re-runs.
+  const handleLogoClick = () => {
+    const root = "/" + (location.pathname.split("/")[1] ?? "");
+    if (!["/dashboard", "/applicant", "/intern"].includes(root)) return;
+    if (location.pathname === root) setRefreshNonce((n) => n + 1);
+    else navigate(root);
+  };
 
   return (
     <>
@@ -46,10 +52,10 @@ function DashboardShell({ navItems, children }) {
         </button>
         <img
           src="/iamslogo.png"
-          alt="Logo — click to refresh"
+          alt="IAMS logo — go to dashboard"
           className="logo logo-refresh"
-          title="Refresh page"
-          onClick={refreshPage}
+          title="Go to dashboard"
+          onClick={handleLogoClick}
         />
         <form className="search-form" role="search" onSubmit={handleSearch}>
           <input

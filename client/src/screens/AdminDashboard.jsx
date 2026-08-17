@@ -17,6 +17,7 @@ import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
 import { OverviewSkeleton } from "../components/Skeletons.jsx";import AddRoleForm from "../components/AddRoleForm.jsx";
 import DashboardShell from "../components/DashboardShell.jsx";
+import DeptDoughnut from "../components/DeptDoughnut.jsx";
 import InterviewPage from "../components/InterviewPage.jsx";
 import SearchResults from "../components/SearchResults.jsx";
 import AdminApplicantsPage from "./AdminApplicantsPage.jsx";
@@ -70,9 +71,6 @@ function Overview() {
 
   const recent = applications.slice(0, 4);
   const depts = stats.applicationsByDepartment;
-  const maxDeptCount = depts.length
-    ? Math.max(...depts.map((d) => Number(d.count)))
-    : 0;
 
   return (
     <>
@@ -173,21 +171,7 @@ function Overview() {
               compact
             />
           ) : (
-            <ul className="dept-list">
-              {depts.map((dept) => (
-                <li key={dept.department}>
-                  <span>{dept.department}</span>
-                  <div className="bar">
-                    <div
-                      style={{
-                        width: `${maxDeptCount ? (Number(dept.count) / maxDeptCount) * 100 : 0}%`,
-                      }}
-                    ></div>
-                  </div>
-                  <span className="count">{dept.count}</span>
-                </li>
-              ))}
-            </ul>
+            <DeptDoughnut depts={depts} />
           )}
         </div>
       </div>

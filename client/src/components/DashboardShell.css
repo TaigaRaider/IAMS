@@ -47,10 +47,11 @@ header {
 
   .logo-refresh {
     cursor: pointer;
-    transition: transform 0.25s ease;
+    transition: transform 0.25s ease, opacity 0.15s ease;
 
     &:hover {
-      transform: rotate(12deg) scale(1.06);
+      transform: scale(1.08);
+      opacity: 0.9;
     }
   }
 

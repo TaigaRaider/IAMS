@@ -46,11 +46,13 @@ function SearchResults() {
   useEffect(() => {
     (async () => {
       try {
+        // The intern router is mounted at /api/interns on the server, so its own
+        // routes are /interns/interns and /interns/interns/tasks.
         if (compare(role, "admin")) {
           const [a, r, i, o] = await Promise.all([
             api("/applications"),
             api("/roles"),
-            api("/interns"),
+            api("/interns/interns"),
             api("/offers"),
           ]);
           setApps(a);
@@ -67,7 +69,7 @@ function SearchResults() {
           setRoles(r);
           setOffers(o);
         } else {
-          setTasks(await api("/interns/tasks"));
+          setTasks(await api("/interns/interns/tasks"));
         }
       } catch (err) {
         if (String(err.message).includes("token") || String(err.message).includes("401")) {

@@ -1,0 +1,86 @@
+.dept-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 0 4px;
+}
+
+.dept-chart-canvas {
+  position: relative;
+  width: 100%;
+  max-width: 230px;
+  height: 230px;
+
+  canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+.dept-chart-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+
+  strong {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--heading);
+    line-height: 1.1;
+  }
+
+  span {
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}
+
+.dept-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dept-dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .dept-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    color: var(--foreground);
+    overflow-wrap: anywhere;
+  }
+
+  .dept-count {
+    flex: none;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+}

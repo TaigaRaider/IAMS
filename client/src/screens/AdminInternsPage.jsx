@@ -46,7 +46,7 @@ function AdminInternsPage() {
   const load = useCallback(async () => {
     try {
       const [internData, offerData] = await Promise.all([
-        api("/interns"),
+        api("/interns/interns"),
         api("/offers"),
       ]);
       setInterns(internData);
@@ -66,7 +66,7 @@ function AdminInternsPage() {
     setPromoting(intern.id);
     setError("");
     try {
-      await api(`/interns/users/${intern.id}/role`, {
+      await api(`/interns/interns/users/${intern.id}/role`, {
         method: "PATCH",
         body: { role: "admin" },
       });

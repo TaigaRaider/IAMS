@@ -52,7 +52,7 @@ function AssignTaskForm({ assignees, initialInternId, onCreated }) {
     }
     setSaving(true);
     try {
-      await api("/interns/tasks", {
+      await api("/interns/interns/tasks", {
         method: "POST",
         body: {
           intern_id: Number(internId),
@@ -143,8 +143,8 @@ function AdminTasksPage() {
   const load = useCallback(async () => {
     try {
       const [taskData, internData, appData] = await Promise.all([
-        api("/interns/tasks"),
-        api("/interns"),
+        api("/interns/interns/tasks"),
+        api("/interns/interns"),
         api("/applications"),
       ]);
       setTasks(taskData);
@@ -183,7 +183,7 @@ function AdminTasksPage() {
     setDeleting(taskId);
     setError("");
     try {
-      await api(`/interns/tasks/${taskId}`, { method: "DELETE" });
+      await api(`/interns/interns/tasks/${taskId}`, { method: "DELETE" });
       await load();
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);

@@ -137,7 +137,7 @@ function InternOverview() {
   useEffect(() => {
     (async () => {
       try {
-        setTasks(await api("/interns/tasks"));
+        setTasks(await api("/interns/interns/tasks"));
       } catch (err) {
         if (!handleUnauthorized(err)) setError(err.message);
       }
@@ -146,7 +146,7 @@ function InternOverview() {
 
   const updateTaskStatus = async (task, status) => {
     try {
-      await api(`/interns/tasks/${task.id}`, {
+      await api(`/interns/interns/tasks/${task.id}`, {
         method: "PATCH",
         body: { status },
       });
