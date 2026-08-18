@@ -1,4 +1,4 @@
-import multer from "multer";
+import multer, { memoryStorage } from "multer";
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname, join, extname } from "node:path";
@@ -42,6 +42,14 @@ function fileFilter(_req, file, cb) {
 // index.js converts them into { error: message } responses.
 export const uploadResume = multer({
   storage,
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter,
+});
+
+// In-memory upload for the text-packet transport (POST /api/text-files): the
+// file bytes are encoded into packets and never written to disk.
+export const uploadTextFile = multer({
+  storage: memoryStorage(),
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter,
 });

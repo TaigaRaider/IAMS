@@ -18,8 +18,7 @@ function ApplicationFormPage() {
 
   const [roles, setRoles] = useState([]);
   const [roleId, setRoleId] = useState(initialRoleId);
-  const [biodata, setBiodata] = useState("");
-  const [resumeUrl] = useState(""); 
+  const [resumeUrl] = useState("");
   const [file, setFile] = useState(null);
   const [biodata, setBiodata] = useState({
     phone: "",
@@ -36,20 +35,28 @@ function ApplicationFormPage() {
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
 
-  const handleUnauthorized = useCallback((err) => {
-    if (String(err.message).includes("token") || String(err.message).includes("401")) {
-      logout();
-      navigate("/login", { replace: true });
-      return true;
-    }
-    return false;
-  }, [navigate]);
+  const handleUnauthorized = useCallback(
+    (err) => {
+      if (
+        String(err.message).includes("token") ||
+        String(err.message).includes("401")
+      ) {
+        logout();
+        navigate("/login", { replace: true });
+        return true;
+      }
+      return false;
+    },
+    [navigate],
+  );
 
   useEffect(() => {
     (async () => {
       try {
         const data = await api("/roles");
-        setRoles(data.filter((r) => r.status === "open" || r.status === "Open"));
+        setRoles(
+          data.filter((r) => r.status === "open" || r.status === "Open"),
+        );
         const me = await api("/auth/me");
         const prefill = me.biodata ?? {};
         setBiodata((prev) => ({
@@ -169,7 +176,9 @@ function ApplicationFormPage() {
                       <Upload size={24} />
                     </div>
                     <div className="upload-text">
-                      <span className="upload-title">Click to upload resume</span>
+                      <span className="upload-title">
+                        Click to upload resume
+                      </span>
                       <span className="upload-subtitle">or drag and drop</span>
                     </div>
                   </>
@@ -335,7 +344,10 @@ function ApplicationFormPage() {
               <PartyPopper size={16} />
               <span>Good luck!</span>
             </div>
-            <button className="btn btn-primary success-modal-ok" onClick={closeSuccess}>
+            <button
+              className="btn btn-primary success-modal-ok"
+              onClick={closeSuccess}
+            >
               Back to dashboard
             </button>
           </div>

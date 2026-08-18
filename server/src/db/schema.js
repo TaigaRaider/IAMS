@@ -250,3 +250,55 @@ export const onboardingSteps = sqliteTable(
     index("onboarding_user_idx").on(t.user_id),
   ],
 );
+
+// Text-packet file transport: a file is stored as a set of uniform text
+// packets (Reed-Solomon data + parity fragments, ~512 base64 chars each) so
+// any `m` of `n` packets per block are enough to reconstruct the file.
+export const textFiles = sqliteTable(
+  "text_files",
+  {
+    file_id: text("file_id").primaryKey(), // first 8 hex chars of sha256(file)
+    file_name: text("file_name").notNull(),
+    mime_type: text("mime_type").notNull(),
+    size_bytes: integer("size_bytes").notNull(),
+    sha256: text("sha256").notNull(),
+    blocks: integer("blocks").notNull(),
+    packet_count: integer("packet_count").notNull(),
+    manifest: text("manifest").notNull(), // JSON: per-block RS geometry + total
+    status: text("status", {
+      enum: ["stored", "repaired", "corrupt"],
+    })
+      .notNull()
+      .default("stored"),
+    created_at: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+);
+
+export const textPackets = sqliteTable(
+  "text_packets",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    file_id: text("file_id")
+      .notNull()
+      .references(() => textFiles.file_id),
+    seq: integer("seq").notNull(), // 0 = manifest, then data, then parity
+    type: text("type", {
+      enum: ["manifest", "data", "parity"],
+    }).notNull(),
+    payload: text("payload").notNull(), // base64 fragment
+    status: text("status", {
+      enum: ["ok", "corrupt", "missing"],
+    })
+      .notNull()
+      .default("ok"),
+    created_at: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [
+    unique("text_packets_file_seq_unique").on(t.file_id, t.seq),
+    index("text_packets_file_idx").on(t.file_id),
+  ],
+);
