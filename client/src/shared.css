@@ -7,6 +7,14 @@
   min-width: 400px;
 }
 
+.card {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    border-color: rgba(8, 51, 68, 0.18);
+  }
+}
+
 .page {
   max-width: 1200px;
   margin: 0 auto;
@@ -129,9 +137,10 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: var(--primary-soft);
+    background: linear-gradient(135deg, rgba(14, 116, 144, 0.14), rgba(8, 51, 68, 0.1));
     color: var(--primary);
     margin-bottom: 8px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   strong {
@@ -282,7 +291,7 @@
   border: none;
   border-radius: 10px;
   padding: 9px 16px;
-  background: var(--primary);
+  background: var(--gradient-primary);
   color: var(--primary-foreground);
   font-size: 13px;
   font-weight: 600;
@@ -292,22 +301,27 @@
   justify-content: center;
   gap: 6px;
   box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
     0 1px 2px rgba(8, 6, 13, 0.08),
-    0 3px 10px rgba(39, 39, 42, 0.14);
+    0 3px 10px rgba(8, 51, 68, 0.22);
   transition:
-    background 0.15s ease,
+    filter 0.15s ease,
     transform 0.15s ease,
     box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: var(--primary-hover);
+    filter: brightness(1.12);
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(39, 39, 42, 0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 4px 16px rgba(8, 51, 68, 0.32);
   }
 
   &:active:not(:disabled) {
     transform: translateY(0);
-    box-shadow: 0 1px 4px rgba(39, 39, 42, 0.15);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 1px 4px rgba(8, 51, 68, 0.2);
   }
 
   &:focus-visible {
@@ -356,6 +370,7 @@ textarea.field {
 .submit-btn {
   height: 2.5rem;
   background-color: var(--primary);
+  background-image: linear-gradient(135deg, #0e7490 0%, #083344 100%);
   border-radius: 11px;
   font-size: 15px;
   font-weight: 700;
@@ -364,17 +379,20 @@ textarea.field {
   cursor: pointer;
   margin-bottom: 17px;
   transition:
-    background 0.15s ease,
+    filter 0.15s ease,
     transform 0.15s ease,
     box-shadow 0.15s ease;
   box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
     0 1px 2px rgba(8, 6, 13, 0.08),
-    0 3px 10px rgba(39, 39, 42, 0.14);
+    0 3px 10px rgba(8, 51, 68, 0.22);
 
   &:hover:not(:disabled) {
-    background-color: var(--primary-hover);
+    filter: brightness(1.12);
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(39, 39, 42, 0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 4px 16px rgba(8, 51, 68, 0.32);
   }
 
   &:active:not(:disabled) {
@@ -409,14 +427,33 @@ textarea.field {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 2px rgba(8, 6, 13, 0.04), 0 8px 24px rgba(8, 6, 13, 0.07);
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 3px;
+    border-radius: 0 0 8px 8px;
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
 
   &:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
+    border-color: rgba(8, 51, 68, 0.25);
+
+    &::before {
+      opacity: 1;
+    }
   }
 
   .card-top {
@@ -447,8 +484,9 @@ textarea.field {
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    background: var(--primary-soft);
+    background: linear-gradient(135deg, rgba(14, 116, 144, 0.16), rgba(8, 51, 68, 0.1));
     color: var(--primary);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 
     svg {
       width: 18px;
@@ -480,7 +518,7 @@ textarea.field {
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 24px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow);
 
     h2 {
       margin: 0 0 16px;
@@ -813,16 +851,19 @@ select {
   }
 
   .popup-btn-primary {
-    background: var(--primary);
+    background-image: linear-gradient(135deg, #0e7490 0%, #083344 100%);
     color: var(--primary-foreground);
     box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
       0 1px 2px rgba(8, 6, 13, 0.08),
-      0 3px 10px rgba(39, 39, 42, 0.14);
+      0 3px 10px rgba(8, 51, 68, 0.22);
 
     &:hover {
-      background: var(--primary-hover);
+      filter: brightness(1.12);
       transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(39, 39, 42, 0.22);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 4px 16px rgba(8, 51, 68, 0.32);
     }
 
     &:active {

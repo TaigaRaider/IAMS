@@ -71,9 +71,6 @@ function Overview() {
 
   const recent = applications.slice(0, 4);
   const depts = stats.applicationsByDepartment;
-  const maxDeptCount = depts.length
-    ? Math.max(...depts.map((d) => Number(d.count)))
-    : 0;
 
   return (
     <>

@@ -16,28 +16,6 @@
   margin-bottom: 32px;
 }
 
-.back-btn {
-  background: var(--input-background);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  color: var(--muted);
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-}
-
-.back-btn:hover {
-  color: var(--foreground);
-  border-color: var(--primary);
-  background: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-}
 
 .form-card {
   padding: 40px;

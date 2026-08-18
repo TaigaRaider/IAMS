@@ -18,6 +18,8 @@ function ApplicationFormPage() {
 
   const [roles, setRoles] = useState([]);
   const [roleId, setRoleId] = useState(initialRoleId);
+  const [biodata, setBiodata] = useState("");
+  const [resumeUrl] = useState(""); 
   const [file, setFile] = useState(null);
   const [biodata, setBiodata] = useState({
     phone: "",

@@ -4,6 +4,9 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import { authRouter } from "./routes/auth.routes.js";
 import { dashboardRouter } from "./routes/dashboard.routes.js";
@@ -35,6 +38,11 @@ process.on("uncaughtException", (err) => {
 const app = express();
 
 app.disable("x-powered-by");
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CLIENT_DIST = join(__dirname, "..", "..", "client", "dist");
+const CLIENT_INDEX = join(CLIENT_DIST, "index.html");
+const hasClientBuild = existsSync(CLIENT_INDEX);
 
 // Behind a reverse proxy (Cloudflare, nginx, Render, ...) req.ip is the
 // proxy's address unless we opt into trusting X-Forwarded-For. Rate limiters
@@ -161,9 +169,20 @@ app.use("/api/onboarding", onboardingRouter);
 // filenames are random UUIDs so they aren't enumerable.
 app.use(UPLOADS_URL, express.static(UPLOADS_DIR, { maxAge: "1h" }));
 
-app.get("/", (req, res) => {
-  res.send("This is BACKEND...HAHAHAHAHAHAHAH");
-});
+// Serve the built SPA (client/dist) so deep links and refreshes work. Any
+// non-API GET falls through to index.html and React Router takes over —
+// otherwise the 404 handler below would return { error: "Route not found" }
+// for every client route (e.g. /dashboard/offers).
+if (hasClientBuild) {
+  app.use(express.static(CLIENT_DIST, { maxAge: "1h" }));
+  app.get(/^\/(?!api(?:\/|$)).*/, (_req, res) => {
+    res.sendFile(CLIENT_INDEX);
+  });
+} else {
+  app.get("/", (req, res) => {
+    res.send("This is BACKEND...HAHAHAHAHAHAHAH");
+  });
+}
 
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
