@@ -42,7 +42,6 @@ function ApplicantPage() {
   const [offers, setOffers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [error, setError] = useState("");
-  const [applying, setApplying] = useState(null);
   const [confirmingWithdraw, setConfirmingWithdraw] = useState(null);
   const [withdrawing, setWithdrawing] = useState(false);
 
@@ -235,9 +234,8 @@ function ApplicantPage() {
                     <button
                       className="apply-btn"
                       onClick={() => apply(role.id)}
-                      disabled={applying === role.id}
                     >
-                      {applying === role.id ? "Applying..." : "Apply"}
+                      Apply
                     </button>
                   )}
                 </li>

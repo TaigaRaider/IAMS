@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
   padding: 8px 0 4px;
 }
 
@@ -17,6 +17,19 @@
     width: 100% !important;
     height: 100% !important;
   }
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: radial-gradient(
+      70% 70% at 50% 45%,
+      rgba(8, 51, 68, 0.08),
+      transparent 70%
+    );
+    pointer-events: none;
+  }
 }
 
 .dept-chart-center {
@@ -30,20 +43,24 @@
   text-align: center;
 
   strong {
-    font-size: 30px;
+    font-size: 32px;
     font-weight: 800;
     letter-spacing: -0.02em;
     color: var(--heading);
     line-height: 1.1;
+    background: linear-gradient(135deg, var(--heading), var(--primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   span {
-    margin-top: 2px;
-    font-size: 12px;
-    font-weight: 600;
+    margin-top: 3px;
+    font-size: 11.5px;
+    font-weight: 700;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
   }
 }
 
@@ -54,33 +71,59 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
 
   li {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    padding: 7px 10px;
+    margin: 0 -10px;
+    border-radius: 10px;
+    transition: background 0.15s ease, transform 0.15s ease;
+
+    &:hover {
+      background: var(--background);
+      transform: translateX(2px);
+    }
   }
 
   .dept-dot {
     flex: none;
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
+    box-shadow:
+      0 0 0 3px var(--card-background),
+      0 2px 6px rgba(8, 6, 13, 0.18);
   }
 
   .dept-name {
     flex: 1;
     min-width: 0;
     font-size: 14px;
+    font-weight: 500;
     color: var(--foreground);
     overflow-wrap: anywhere;
   }
 
   .dept-count {
     flex: none;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--primary);
+
+    em {
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 2px 7px;
+      border-radius: 99px;
+      background: var(--primary-soft);
+    }
   }
 }

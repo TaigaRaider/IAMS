@@ -3,14 +3,35 @@ import Chart from "chart.js/auto";
 import "./DeptDoughnut.css";
 
 const PALETTE = [
-  "#22d3ee",
-  "#f43f5e",
-  "#4ade80",
-  "#facc15",
-  "#14b8a6",
-  "#84cc16",
-  "#a78bfa",
+  "#0ea5e9", // sky
+  "#f97316", // flame
+  "#10b981", // emerald
+  "#8b5cf6", // violet
+  "#ef4444", // coral red
+  "#eab308", // amber
+  "#06b6d4", // cyan
+  "#ec4899", // pink
 ];
+
+const toRgb = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  return {
+    r: (n >> 16) & 0xff,
+    g: (n >> 8) & 0xff,
+    b: n & 0xff,
+  };
+};
+
+const mix = (hex, otherHex, amount) => {
+  const a = toRgb(hex);
+  const b = toRgb(otherHex);
+  const c = {
+    r: Math.round(a.r + (b.r - a.r) * amount),
+    g: Math.round(a.g + (b.g - a.g) * amount),
+    b: Math.round(a.b + (b.b - a.b) * amount),
+  };
+  return `rgb(${c.r}, ${c.g}, ${c.b})`;
+};
 
 function DeptDoughnut({ depts }) {
   const canvasRef = useRef(null);
@@ -26,23 +47,51 @@ function DeptDoughnut({ depts }) {
         datasets: [
           {
             data: depts.map((d) => Number(d.count)),
-            backgroundColor: depts.map((_, i) => PALETTE[i % PALETTE.length]),
-            borderColor: "#fff",
+            backgroundColor: (context) => {
+              const { ctx: c, chartArea } = context.chart;
+              if (!chartArea) return PALETTE[context.dataIndex % PALETTE.length];
+              const { top, bottom } = chartArea;
+              const base = PALETTE[context.dataIndex % PALETTE.length];
+              const gradient = c.createLinearGradient(0, top, 0, bottom);
+              gradient.addColorStop(0, mix(base, "#ffffff", 0.28));
+              gradient.addColorStop(1, mix(base, "#0b1020", 0.22));
+              return gradient;
+            },
+            hoverBackgroundColor: (context) =>
+              mix(PALETTE[context.dataIndex % PALETTE.length], "#ffffff", 0.32),
+            borderColor: "#ffffff",
             borderWidth: 3,
-            hoverOffset: 8,
+            borderRadius: 8,
+            hoverOffset: 12,
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: "72%",
+        cutout: "70%",
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 900,
+          easing: "easeOutQuart",
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
+            backgroundColor: "rgba(10, 14, 24, 0.92)",
+            titleColor: "rgba(255, 255, 255, 0.7)",
+            bodyColor: "#ffffff",
+            padding: 12,
+            cornerRadius: 10,
+            displayColors: true,
+            boxPadding: 4,
             callbacks: {
-              label: (item) =>
-                ` ${item.label}: ${item.formattedValue} application${item.parsed === 1 ? "" : "s"}`,
+              label: (item) => {
+                const count = Number(item.parsed);
+                const pct = total ? ((count / total) * 100).toFixed(1) : "0";
+                return ` ${item.label}: ${count} (${pct}%)`;
+              },
             },
           },
         },
@@ -51,7 +100,7 @@ function DeptDoughnut({ depts }) {
     return () => {
       chart.destroy();
     };
-  }, [depts]);
+  }, [depts, total]);
 
   if (!depts.length) return null;
 
@@ -69,16 +118,22 @@ function DeptDoughnut({ depts }) {
         </div>
       </div>
       <ul className="dept-legend">
-        {depts.map((d, i) => (
-          <li key={d.department}>
-            <span
-              className="dept-dot"
-              style={{ background: PALETTE[i % PALETTE.length] }}
-            />
-            <span className="dept-name">{d.department}</span>
-            <span className="dept-count">{d.count}</span>
-          </li>
-        ))}
+        {depts.map((d, i) => {
+          const pct = total ? ((Number(d.count) / total) * 100).toFixed(0) : "0";
+          return (
+            <li key={d.department}>
+              <span
+                className="dept-dot"
+                style={{ background: PALETTE[i % PALETTE.length] }}
+              />
+              <span className="dept-name">{d.department}</span>
+              <span className="dept-count">
+                {d.count}
+                <em>{pct}%</em>
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

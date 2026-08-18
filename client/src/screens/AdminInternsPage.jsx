@@ -10,6 +10,7 @@ import {
   Building2,
   ListTodo,
   CalendarDays,
+  FileText,
 } from "lucide-react";
 import { api, logout } from "../api";
 import EmptyState from "../components/EmptyState.jsx";
