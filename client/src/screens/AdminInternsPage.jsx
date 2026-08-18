@@ -10,6 +10,9 @@ import {
   Building2,
   ListTodo,
   CalendarDays,
+  Check,
+  Circle,
+  FileText,
 } from "lucide-react";
 import { api, logout } from "../api";
 import EmptyState from "../components/EmptyState.jsx";
@@ -30,6 +33,8 @@ function AdminInternsPage() {
   const [error, setError] = useState("");
   const [promoting, setPromoting] = useState(null);
   const [selectedIntern, setSelectedIntern] = useState(null);
+  const [onboarding, setOnboarding] = useState(null);
+  const [onboardingBusy, setOnboardingBusy] = useState(false);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -81,6 +86,54 @@ function AdminInternsPage() {
     }
   };
 
+  const openIntern = async (intern) => {
+    setSelectedIntern(intern);
+    setOnboarding(null);
+    try {
+      const data = await api(`/onboarding?user_id=${intern.id}`);
+      setOnboarding(data);
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    }
+  };
+
+  const toggleOnboardingStep = async (step) => {
+    if (!selectedIntern || onboardingBusy) return;
+    const nextDone = !step.done;
+    setOnboardingBusy(true);
+    setOnboarding((prev) => ({
+      ...prev,
+      steps: prev.steps.map((s) =>
+        s.step_key === step.step_key ? { ...s, done: nextDone } : s,
+      ),
+      done: prev.done + (nextDone ? 1 : -1),
+      progress: Math.round(
+        ((prev.done + (nextDone ? 1 : -1)) / prev.total) * 100,
+      ),
+    }));
+    try {
+      await api(`/onboarding/${step.step_key}`, {
+        method: "PATCH",
+        body: { done: nextDone, user_id: selectedIntern.id },
+      });
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+      setOnboarding((prev) => ({
+        ...prev,
+        steps: prev.steps.map((s) =>
+          s.step_key === step.step_key ? { ...s, done: step.done } : s,
+        ),
+        done: prev.done + (nextDone ? -1 : 1),
+        progress: Math.round(
+          ((prev.done + (nextDone ? -1 : 1)) / prev.total) * 100,
+        ),
+      }));
+    } finally {
+      setOnboardingBusy(false);
+      await load();
+    }
+  };
+
   const offerCountFor = (internId) =>
     offers.filter((o) => Number(o.applicant_id) === Number(internId)).length;
 
@@ -104,6 +157,7 @@ function AdminInternsPage() {
                 <th>Intern</th>
                 <th>Offers</th>
                 <th>Task Progress</th>
+                <th>Onboarding</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -115,7 +169,7 @@ function AdminInternsPage() {
                     <td>
                       <button
                         className="applicant-cell applicant-link"
-                        onClick={() => setSelectedIntern(intern)}
+                        onClick={() => openIntern(intern)}
                         title="View profile"
                       >
                         <div className="avatar-mini">
@@ -146,6 +200,19 @@ function AdminInternsPage() {
                         </div>
                         <span>
                           {intern.tasks_done}/{intern.tasks_total}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="progress-cell">
+                        <div className="bar">
+                          <div
+                            className={intern.onboarding_progress >= 100 ? "bar-done" : ""}
+                            style={{ width: `${intern.onboarding_progress}%` }}
+                          ></div>
+                        </div>
+                        <span>
+                          {intern.onboarding_done}/{intern.onboarding_total}
                         </span>
                       </div>
                     </td>
@@ -223,6 +290,14 @@ function AdminInternsPage() {
                 </div>
                 <div className="profile-detail-row">
                   <span>
+                    <CalendarDays size={14} /> Onboarding Progress
+                  </span>
+                  <span>
+                    {selectedIntern.onboarding_done} / {selectedIntern.onboarding_total} ({selectedIntern.onboarding_progress}%)
+                  </span>
+                </div>
+                <div className="profile-detail-row">
+                  <span>
                     <CalendarDays size={14} /> Tasks Completed
                   </span>
                   <span>
@@ -253,6 +328,32 @@ function AdminInternsPage() {
                     <span style={{textAlign: "left", fontSize: "13px", lineHeight: "1.5", whiteSpace: "pre-wrap", background: "var(--background)", padding: "12px", borderRadius: "8px", width: "100%"}}>
                       {selectedIntern.biodata}
                     </span>
+                  </div>
+                )}
+
+                {onboarding && (
+                  <div className="profile-detail-row" style={{flexDirection: "column", alignItems: "flex-start", gap: "8px"}}>
+                    <span style={{marginBottom: "4px"}}>
+                      <ListTodo size={14} /> Onboarding Checklist
+                    </span>
+                    <ul className="onboarding-admin-list">
+                      {onboarding.steps.map((step) => (
+                        <li
+                          key={step.step_key}
+                          className={step.done ? "done" : ""}
+                        >
+                          <button
+                            className="onboarding-toggle"
+                            onClick={() => toggleOnboardingStep(step)}
+                            disabled={onboardingBusy}
+                            aria-label={`Mark ${step.label} ${step.done ? "incomplete" : "complete"}`}
+                          >
+                            {step.done ? <Check size={14} /> : <Circle size={14} />}
+                          </button>
+                          <span>{step.label}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>

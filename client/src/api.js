@@ -9,7 +9,10 @@ const isTransient = (res) =>
   res == null || res.status === 500 || res.status === 502 || res.status === 503 || res.status === 504;
 
 export async function api(path, { method = "GET", body } = {}) {
-  const headers = { "Content-Type": "application/json" };
+  // FormData bodies are sent as multipart — the browser sets the boundary
+  // header itself, so no Content-Type here.
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+  const headers = isFormData ? {} : { "Content-Type": "application/json" };
   const session = getSession();
   if (session?.role && !session.token) {
     throw new Error("Missing session token — please sign in again");
@@ -28,7 +31,7 @@ export async function api(path, { method = "GET", body } = {}) {
         method,
         headers,
         credentials: "omit",
-        body: body ? JSON.stringify(body) : undefined,
+        body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
         signal: controller.signal,
       });
 

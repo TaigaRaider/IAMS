@@ -13,6 +13,7 @@ import { roleRouter } from "./routes/roles.routes.js";
 import { applicationRouter } from "./routes/applications.routes.js";
 import { internRouter } from "./routes/interns.routes.js";
 import { notificationRouter } from "./routes/notifications.routes.js";
+import { onboardingRouter } from "./routes/onboarding.routes.js";
 import { UPLOADS_DIR, UPLOADS_URL } from "./utils/upload.js";
 
 config();
@@ -154,6 +155,7 @@ app.use("/api/roles", roleRouter);
 app.use("/api/applications", applicationRouter);
 app.use("/api", internRouter);
 app.use("/api/notifications", notificationRouter);
+app.use("/api/onboarding", onboardingRouter);
 
 // Uploaded documents (resumes/CVs) are stored on disk and served by filename;
 // filenames are random UUIDs so they aren't enumerable.

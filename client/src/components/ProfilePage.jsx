@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Power, Smile, PenLine, Sparkles, User, BadgeCheck, KeyRound } from "lucide-react";
+import {
+  ArrowLeft,
+  Power,
+  Smile,
+  PenLine,
+  Sparkles,
+  User,
+  BadgeCheck,
+  KeyRound,
+} from "lucide-react";
 import { api, getSession, logout, saveSession } from "../api";
 import "./ProfilePage.css";
 
@@ -11,7 +20,7 @@ function ProfilePage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
-  
+
   // Edit profile state
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -88,13 +97,17 @@ function ProfilePage() {
       });
       // The change revokes this session server-side — sign in again with the
       // new password.
-      setPwMsg({ type: "success", text: "Password changed — signing you out..." });
+      setPwMsg({
+        type: "success",
+        text: "Password changed — signing you out...",
+      });
       setTimeout(() => {
         logout();
         navigate("/login", { replace: true });
       }, 1200);
     } catch (err) {
-      if (!handleUnauthorized(err)) setPwMsg({ type: "error", text: err.message });
+      if (!handleUnauthorized(err))
+        setPwMsg({ type: "error", text: err.message });
     } finally {
       setPwBusy(false);
     }
@@ -141,7 +154,15 @@ function ProfilePage() {
       </div>
       {error && <p className="form-error">{error}</p>}
       {editSuccess && (
-        <p className="form-success" style={{ color: "var(--success-color, #15803d)", background: "var(--success-bg, #dcfce7)", padding: "12px", borderRadius: "8px" }}>
+        <p
+          className="form-success"
+          style={{
+            color: "var(--success-color, #15803d)",
+            background: "var(--success-bg, #dcfce7)",
+            padding: "12px",
+            borderRadius: "8px",
+          }}
+        >
           Profile updated successfully!
         </p>
       )}
@@ -156,7 +177,21 @@ function ProfilePage() {
             <label className="upload-avatar-btn" title="Upload new picture">
               <input type="file" accept="image/*" style={{ display: "none" }} />
               <div className="upload-icon-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" x2="12" y1="3" y2="15" />
+                </svg>
               </div>
             </label>
           </div>
@@ -177,28 +212,47 @@ function ProfilePage() {
             Account Details
           </h2>
           {!isEditing && (
-            <button className="cute-inline-edit-btn" onClick={() => setIsEditing(true)}>
+            <button
+              className="cute-inline-edit-btn"
+              onClick={() => setIsEditing(true)}
+            >
               <PenLine size={14} /> Edit
             </button>
           )}
         </div>
 
         {isEditing ? (
-          <form onSubmit={handleSaveProfile} className="access-form cute-edit-form">
+          <form
+            onSubmit={handleSaveProfile}
+            className="access-form cute-edit-form"
+          >
             <div className="cute-form-group">
               <label htmlFor="edit-name">Full name</label>
-              <input 
+              <input
                 id="edit-name"
                 className="field cute-input"
-                type="text" 
+                type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 required
               />
             </div>
             <div className="cute-form-actions">
-              <button type="button" className="btn ghost-btn cute-btn-secondary" onClick={() => { setIsEditing(false); setEditName(profile?.full_name ?? ""); }}>Cancel</button>
-              <button type="submit" className="btn cute-btn-primary" disabled={busy}>
+              <button
+                type="button"
+                className="btn ghost-btn cute-btn-secondary"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditName(profile?.full_name ?? "");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn cute-btn-primary"
+                disabled={busy}
+              >
                 {busy ? "Saving..." : "Save Changes"}
               </button>
             </div>
@@ -229,9 +283,7 @@ function ProfilePage() {
           Change your password. You'll be asked for your current password to
           confirm it's really you.
         </p>
-        {pwMsg && (
-          <p className={`security-msg ${pwMsg.type}`}>{pwMsg.text}</p>
-        )}
+        {pwMsg && <p className={`security-msg ${pwMsg.type}`}>{pwMsg.text}</p>}
         <form onSubmit={changePassword} className="access-form security-form">
           <div className="cute-form-group">
             <label htmlFor="pw-current">Current password</label>
@@ -240,7 +292,9 @@ function ProfilePage() {
               className="field cute-input"
               type="password"
               value={pwForm.current}
-              onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))}
+              onChange={(e) =>
+                setPwForm((p) => ({ ...p, current: e.target.value }))
+              }
               required
               autoComplete="current-password"
             />
@@ -252,7 +306,9 @@ function ProfilePage() {
               className="field cute-input"
               type="password"
               value={pwForm.next}
-              onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))}
+              onChange={(e) =>
+                setPwForm((p) => ({ ...p, next: e.target.value }))
+              }
               required
               minLength={8}
               autoComplete="new-password"
@@ -265,14 +321,20 @@ function ProfilePage() {
               className="field cute-input"
               type="password"
               value={pwForm.confirm}
-              onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))}
+              onChange={(e) =>
+                setPwForm((p) => ({ ...p, confirm: e.target.value }))
+              }
               required
               minLength={8}
               autoComplete="new-password"
             />
           </div>
           <div className="cute-form-actions">
-            <button type="submit" className="btn cute-btn-primary" disabled={pwBusy}>
+            <button
+              type="submit"
+              className="btn cute-btn-primary"
+              disabled={pwBusy}
+            >
               {pwBusy ? "Changing..." : "Change Password"}
             </button>
           </div>

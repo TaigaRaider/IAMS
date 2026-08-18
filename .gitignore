@@ -19,6 +19,12 @@ client/dist-ssr
 
 _testing/
 
+# Uploaded documents (resumes/CVs)
+server/src/uploads/
+
+# Local-only graphify cost tracking
+graphify-out/cost.json
+
 
 # Editor directories and files
 .vscode/*

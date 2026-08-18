@@ -37,12 +37,70 @@
         background: linear-gradient(90deg, #7c5cff, #5b8cff);
         border-radius: 999px;
       }
+
+      div.bar-done {
+        background: linear-gradient(90deg, #16a34a, #22c55e);
+      }
     }
 
     span {
       font-size: 12px;
       font-weight: 600;
       white-space: nowrap;
+    }
+  }
+
+  .onboarding-admin-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--foreground);
+
+      &.done span {
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+    }
+
+    .onboarding-toggle {
+      width: 26px;
+      height: 26px;
+      flex: none;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--input-background);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+    }
+
+    li.done .onboarding-toggle {
+      background: var(--success-color, #15803d);
+      border-color: var(--success-color, #15803d);
+      color: #fff;
     }
   }
 

@@ -68,6 +68,14 @@ const formatDate = (value) => {
   });
 };
 
+const DEFAULT_ONBOARDING_STEPS = [
+  { step_key: "submit_documents", label: "Submit required documents" },
+  { step_key: "complete_forms", label: "Complete onboarding forms" },
+  { step_key: "work_email", label: "Set up work email & accounts" },
+  { step_key: "handbook", label: "Review employee handbook" },
+  { step_key: "meet_team", label: "Meet your team & mentor" },
+];
+
 function InternOverview() {
   const navigate = useNavigate();
   const session = getSession();
@@ -78,29 +86,8 @@ function InternOverview() {
   const [error, setError] = useState("");
   const [selectedContact, setSelectedContact] = useState(null);
 
-  const [onboardingSteps, setOnboardingSteps] = useState(() => {
-    const saved = localStorage.getItem(`onboarding_${session?.sub}`);
-    if (saved) return JSON.parse(saved);
-    return [
-      { label: "Submit required documents", done: true },
-      { label: "Complete onboarding forms", done: true },
-      { label: "Set up work email & accounts", done: false },
-      { label: "Review employee handbook", done: false },
-      { label: "Meet your team & mentor", done: false },
-    ];
-  });
-
-  useEffect(() => {
-    if (session?.sub) {
-      localStorage.setItem(`onboarding_${session.sub}`, JSON.stringify(onboardingSteps));
-    }
-  }, [onboardingSteps, session?.sub]);
-
-  const toggleOnboardingStep = (index) => {
-    const newSteps = [...onboardingSteps];
-    newSteps[index].done = !newSteps[index].done;
-    setOnboardingSteps(newSteps);
-  };
+  const [onboardingSteps, setOnboardingSteps] = useState(DEFAULT_ONBOARDING_STEPS);
+  const [onboardingLoading, setOnboardingLoading] = useState(true);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -116,6 +103,19 @@ function InternOverview() {
     },
     [navigate],
   );
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api("/onboarding");
+        setOnboardingSteps(data.steps);
+      } catch (err) {
+        if (!handleUnauthorized(err)) setError(err.message);
+      } finally {
+        setOnboardingLoading(false);
+      }
+    })();
+  }, [handleUnauthorized]);
 
   useEffect(() => {
     (async () => {
@@ -143,6 +143,29 @@ function InternOverview() {
       }
     })();
   }, [handleUnauthorized]);
+
+  const toggleOnboardingStep = async (step) => {
+    const nextDone = !step.done;
+    // Optimistic update; the next poll/fetch corrects any failure.
+    setOnboardingSteps((prev) =>
+      prev.map((s) =>
+        s.step_key === step.step_key ? { ...s, done: nextDone } : s,
+      ),
+    );
+    try {
+      await api(`/onboarding/${step.step_key}`, {
+        method: "PATCH",
+        body: { done: nextDone },
+      });
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+      setOnboardingSteps((prev) =>
+        prev.map((s) =>
+          s.step_key === step.step_key ? { ...s, done: step.done } : s,
+        ),
+      );
+    }
+  };
 
   const updateTaskStatus = async (task, status) => {
     try {
@@ -264,12 +287,12 @@ function InternOverview() {
             </div>
           </div>
           <ul className="checklist">
-            {onboardingSteps.map((step, idx) => (
+            {onboardingSteps.map((step) => (
               <li 
-                key={step.label} 
+                key={step.step_key} 
                 className={step.done ? "done" : ""} 
-                onClick={() => toggleOnboardingStep(idx)}
-                style={{ cursor: "pointer", transition: "background-color 0.2s" }}
+                onClick={() => toggleOnboardingStep(step)}
+                style={{ cursor: onboardingLoading ? "default" : "pointer", transition: "background-color 0.2s" }}
               >
                 {step.done ? (
                   <CheckCircle2 className="check-icon done" size={20} />

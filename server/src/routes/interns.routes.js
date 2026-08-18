@@ -7,12 +7,14 @@ import {
   roles,
   offers,
   internTasks,
+  onboardingSteps,
 } from "../db/schema.js";
 import { verifyAuth, requireAdmin } from "../middleware/auth.middleware.js";
 import { compare } from "../utils/compare.js";
 import { notify } from "../utils/notify.js";
 import { sendMail } from "../utils/mailer.js";
 import { taskEmail } from "../utils/email-templates.js";
+import { DEFAULT_ONBOARDING_STEPS } from "./onboarding.routes.js";
 
 const internRouter = Router();
 
@@ -34,6 +36,7 @@ internRouter.get("/interns", verifyAuth, requireAdmin, async (req, res, next) =>
         skills: users.skills,
         resume_path: applications.resume_path,
         resume_name: applications.resume_name,
+        resume_url: applications.resume_path,
         role_title: roles.title,
         department: roles.department,
         hired_at: applications.applied_at,
@@ -65,15 +68,39 @@ internRouter.get("/interns", verifyAuth, requireAdmin, async (req, res, next) =>
         .all();
     }
     const countMap = new Map(taskCounts.map((t) => [Number(t.intern_id), t]));
+
+    let onboardingCounts = [];
+    if (internIds.length > 0) {
+      onboardingCounts = await db
+        .select({
+          user_id: onboardingSteps.user_id,
+          done: sql`SUM(CASE WHEN ${onboardingSteps.done} = ${1} THEN 1 ELSE 0 END)`,
+        })
+        .from(onboardingSteps)
+        .where(sql`${onboardingSteps.user_id} IN (${sql.join(internIds, sql`, `)})`)
+        .groupBy(onboardingSteps.user_id)
+        .all();
+    }
+    const onboardingMap = new Map(
+      onboardingCounts.map((o) => [Number(o.user_id), Number(o.done)]),
+    );
+
     const data = rows.map((r) => {
       const c = countMap.get(r.id) ?? { total: 0, done: 0 };
       const total = Number(c.total);
       const done = Number(c.done);
+      const onboardingTotal = DEFAULT_ONBOARDING_STEPS.length;
+      const onboardingDone = onboardingMap.get(r.id) ?? 0;
       return {
         ...r,
         tasks_total: total,
         tasks_done: done,
         progress: total ? Math.round((done / total) * 100) : 0,
+        onboarding_total: onboardingTotal,
+        onboarding_done: onboardingDone,
+        onboarding_progress: onboardingTotal
+          ? Math.round((onboardingDone / onboardingTotal) * 100)
+          : 0,
       };
     });
     res.json({ data });

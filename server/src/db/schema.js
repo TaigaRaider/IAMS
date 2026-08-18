@@ -25,6 +25,7 @@ export const users = sqliteTable(
     education: text("education"),
     experience: text("experience"),
     skills: text("skills"),
+    cover_letter: text("cover_letter"),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -228,4 +229,24 @@ export const notifications = sqliteTable(
       .default(sql`(datetime('now'))`),
   },
   (t) => [index("notifications_user_read_idx").on(t.user_id, t.is_read)],
+);
+
+export const onboardingSteps = sqliteTable(
+  "onboarding_steps",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    user_id: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    step_key: text("step_key").notNull(),
+    label: text("label").notNull(),
+    done: integer("done").notNull().default(0),
+    updated_at: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [
+    unique("onboarding_user_step_unique").on(t.user_id, t.step_key),
+    index("onboarding_user_idx").on(t.user_id),
+  ],
 );

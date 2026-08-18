@@ -276,6 +276,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
         education: users.education,
         experience: users.experience,
         skills: users.skills,
+        cover_letter: users.cover_letter,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -316,6 +317,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
               education: user.education,
               experience: user.experience,
               skills: user.skills,
+              cover_letter: user.cover_letter,
             },
           },
         });
@@ -335,6 +337,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
           education: user.education,
           experience: user.experience,
           skills: user.skills,
+          cover_letter: user.cover_letter,
         },
       },
     });

@@ -23,6 +23,7 @@ const applicationSelect = {
   applied_at: applications.applied_at,
   resume_path: applications.resume_path,
   resume_name: applications.resume_name,
+  resume_url: applications.resume_path,
   applicant_phone: users.phone,
   applicant_location: users.location,
   applicant_nationality: users.nationality,
@@ -30,6 +31,7 @@ const applicationSelect = {
   applicant_education: users.education,
   applicant_experience: users.experience,
   applicant_skills: users.skills,
+  biodata: users.cover_letter,
 };
 
 // White-listed biodata fields with sane length caps, trimmed.
@@ -41,6 +43,7 @@ const BIODATA_FIELDS = {
   education: 500,
   experience: 2000,
   skills: 500,
+  cover_letter: 2000,
 };
 
 function pickBiodata(source = {}) {
