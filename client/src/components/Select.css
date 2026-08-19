@@ -1,0 +1,151 @@
+.select {
+  position: relative;
+  display: inline-block;
+  min-width: 0;
+}
+
+.select-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 2.5rem;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  background: var(--input-background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--foreground);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(8, 6, 13, 0.04), 0 1px 2px rgba(8, 6, 13, 0.02);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #94a3b8;
+    background-color: #f8fafc;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-soft);
+    background-color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background-color: #f1f5f9;
+  }
+}
+
+.select-label,
+.select-placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-placeholder {
+  color: var(--muted);
+}
+
+.select-chevron {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.select-chevron.up {
+  transform: rotate(180deg);
+}
+
+.select-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(340px, calc(100vw - 32px));
+  z-index: 300;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--card-background);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(39, 39, 42, 0.15);
+  max-height: 260px;
+  overflow-y: auto;
+  animation: select-pop 0.15s ease;
+}
+
+.select-menu.right {
+  left: auto;
+  right: 0;
+}
+
+@keyframes select-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &.highlight {
+    background: var(--primary-soft);
+  }
+}
+
+.select-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-check {
+  flex: none;
+  color: var(--primary);
+}
+
+.select-empty {
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.select.field {
+  width: 100%;
+  height: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  margin-bottom: 15px;
+}

@@ -7,10 +7,12 @@ import {
   Mail,
   Briefcase,
   CalendarDays,
+  Globe,
 } from "lucide-react";
 import { api, logout } from "../api";
 import ExportButton from "../components/ExportButton.jsx";
 import EmptyState from "../components/EmptyState.jsx";
+import Select from "../components/Select.jsx";
 import "./AdminApplicantsPage.css";
 
 const STATUSES = ["In Review", "Shortlisted", "Rejected", "Hired"];
@@ -114,30 +116,22 @@ function ApplicantsPage() {
       {error && <p className="form-error">{error}</p>}
       {applicants.length > 0 && (
         <div className="filters-row">
-          <select
-            className="status-select"
+          <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="">All statuses</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <select
-            className="status-select"
+            onChange={setStatusFilter}
+            options={[
+              { value: "", label: "All statuses" },
+              ...STATUSES.map((s) => ({ value: s, label: s })),
+            ]}
+          />
+          <Select
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-          >
-            <option value="">All roles</option>
-            {roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.title}
-              </option>
-            ))}
-          </select>
+            onChange={setRoleFilter}
+            options={[
+              { value: "", label: "All roles" },
+              ...roles.map((r) => ({ value: r.id, label: r.title })),
+            ]}
+          />
         </div>
       )}
       <div className="card table-card">
@@ -183,18 +177,12 @@ function ApplicantsPage() {
                     </span>
                   </td>
                   <td>
-                    <select
-                      className="status-select"
+                    <Select
                       value={a.status}
                       disabled={updating === a.id}
-                      onChange={(e) => changeStatus(a.id, e.target.value)}
-                    >
-                      {STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(v) => changeStatus(a.id, v)}
+                      options={STATUSES.map((s) => ({ value: s, label: s }))}
+                    />
                   </td>
                 </tr>
               ))}
@@ -262,18 +250,24 @@ function ApplicantsPage() {
                       <FileText size={14} /> Resume
                     </span>
                     <span>
-                      <a href={selectedApplicant.resume_url} target="_blank" rel="noreferrer" style={{color: 'var(--primary)', textDecoration: 'none'}}>View Resume</a>
+                      <a href={selectedApplicant.resume_url} target="_blank" rel="noreferrer" className="profile-resume-link">View Resume</a>
                     </span>
                   </div>
                 )}
-                {selectedApplicant.biodata && (
-                  <div className="profile-detail-row" style={{flexDirection: "column", alignItems: "flex-start", gap: "4px"}}>
-                    <span style={{marginBottom: "4px"}}>
-                      <FileText size={14} /> Biodata / Cover Letter
+                {selectedApplicant.applicant_dob && (
+                  <div className="profile-detail-row">
+                    <span>
+                      <CalendarDays size={14} /> Date of Birth
                     </span>
-                    <span style={{textAlign: "left", fontSize: "13px", lineHeight: "1.5", whiteSpace: "pre-wrap", background: "var(--background)", padding: "12px", borderRadius: "8px", width: "100%"}}>
-                      {selectedApplicant.biodata}
+                    <span>{formatDate(selectedApplicant.applicant_dob)}</span>
+                  </div>
+                )}
+                {selectedApplicant.applicant_nationality && (
+                  <div className="profile-detail-row">
+                    <span>
+                      <Globe size={14} /> Nationality
                     </span>
+                    <span>{selectedApplicant.applicant_nationality}</span>
                   </div>
                 )}
               </div>

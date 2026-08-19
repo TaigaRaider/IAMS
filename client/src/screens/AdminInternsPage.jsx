@@ -10,12 +10,13 @@ import {
   Building2,
   ListTodo,
   CalendarDays,
-  Check,
-  Circle,
   FileText,
+  Globe,
 } from "lucide-react";
 import { api, logout } from "../api";
 import ExportButton from "../components/ExportButton.jsx";
+import { celebrate } from "../utils/celebrate.js";
+import { useToast } from "../components/toast-context.js";
 import EmptyState from "../components/EmptyState.jsx";
 import "./AdminInternsPage.css";
 
@@ -29,13 +30,12 @@ const initials = (name) =>
 
 function AdminInternsPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [interns, setInterns] = useState([]);
   const [offers, setOffers] = useState([]);
   const [error, setError] = useState("");
   const [promoting, setPromoting] = useState(null);
   const [selectedIntern, setSelectedIntern] = useState(null);
-  const [onboarding, setOnboarding] = useState(null);
-  const [onboardingBusy, setOnboardingBusy] = useState(false);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -80,58 +80,12 @@ function AdminInternsPage() {
         body: { role: "admin" },
       });
       await load();
+      celebrate();
+      toast(`${intern.full_name} is now an admin`, "success");
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
       setPromoting(null);
-    }
-  };
-
-  const openIntern = async (intern) => {
-    setSelectedIntern(intern);
-    setOnboarding(null);
-    try {
-      const data = await api(`/onboarding?user_id=${intern.id}`);
-      setOnboarding(data);
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-    }
-  };
-
-  const toggleOnboardingStep = async (step) => {
-    if (!selectedIntern || onboardingBusy) return;
-    const nextDone = !step.done;
-    setOnboardingBusy(true);
-    setOnboarding((prev) => ({
-      ...prev,
-      steps: prev.steps.map((s) =>
-        s.step_key === step.step_key ? { ...s, done: nextDone } : s,
-      ),
-      done: prev.done + (nextDone ? 1 : -1),
-      progress: Math.round(
-        ((prev.done + (nextDone ? 1 : -1)) / prev.total) * 100,
-      ),
-    }));
-    try {
-      await api(`/onboarding/${step.step_key}`, {
-        method: "PATCH",
-        body: { done: nextDone, user_id: selectedIntern.id },
-      });
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-      setOnboarding((prev) => ({
-        ...prev,
-        steps: prev.steps.map((s) =>
-          s.step_key === step.step_key ? { ...s, done: step.done } : s,
-        ),
-        done: prev.done + (nextDone ? -1 : 1),
-        progress: Math.round(
-          ((prev.done + (nextDone ? -1 : 1)) / prev.total) * 100,
-        ),
-      }));
-    } finally {
-      setOnboardingBusy(false);
-      await load();
     }
   };
 
@@ -161,7 +115,6 @@ function AdminInternsPage() {
                 <th>Intern</th>
                 <th>Offers</th>
                 <th>Task Progress</th>
-                <th>Onboarding</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -173,7 +126,7 @@ function AdminInternsPage() {
                     <td>
                       <button
                         className="applicant-cell applicant-link"
-                        onClick={() => openIntern(intern)}
+                        onClick={() => setSelectedIntern(intern)}
                         title="View profile"
                       >
                         <div className="avatar-mini">
@@ -204,19 +157,6 @@ function AdminInternsPage() {
                         </div>
                         <span>
                           {intern.tasks_done}/{intern.tasks_total}
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="progress-cell">
-                        <div className="bar">
-                          <div
-                            className={intern.onboarding_progress >= 100 ? "bar-done" : ""}
-                            style={{ width: `${intern.onboarding_progress}%` }}
-                          ></div>
-                        </div>
-                        <span>
-                          {intern.onboarding_done}/{intern.onboarding_total}
                         </span>
                       </div>
                     </td>
@@ -288,24 +228,19 @@ function AdminInternsPage() {
                 </div>
                 <div className="profile-detail-row">
                   <span>
-                    <ListTodo size={14} /> Tasks Progress
+                    <ListTodo size={14} /> Tasks Completed
                   </span>
-                  <span>{selectedIntern.progress}%</span>
+                  <span>
+                    {selectedIntern.tasks_done} / {selectedIntern.tasks_total}
+                  </span>
                 </div>
                 <div className="profile-detail-row">
                   <span>
                     <CalendarDays size={14} /> Onboarding Progress
                   </span>
                   <span>
-                    {selectedIntern.onboarding_done} / {selectedIntern.onboarding_total} ({selectedIntern.onboarding_progress}%)
-                  </span>
-                </div>
-                <div className="profile-detail-row">
-                  <span>
-                    <CalendarDays size={14} /> Tasks Completed
-                  </span>
-                  <span>
-                    {selectedIntern.tasks_done} / {selectedIntern.tasks_total}
+                    {selectedIntern.onboarding_done} /{" "}
+                    {selectedIntern.onboarding_total}
                   </span>
                 </div>
                 <div className="profile-detail-row">
@@ -320,25 +255,29 @@ function AdminInternsPage() {
                       <FileText size={14} /> Resume
                     </span>
                     <span>
-                      <a href={selectedIntern.resume_url} target="_blank" rel="noreferrer" style={{color: 'var(--primary)', textDecoration: 'none'}}>View Resume</a>
+                      <a
+                        href={selectedIntern.resume_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="profile-resume-link"
+                      >
+                        View Resume
+                      </a>
                     </span>
                   </div>
                 )}
-                {selectedIntern.biodata && (
-                  <div className="profile-detail-row" style={{flexDirection: "column", alignItems: "flex-start", gap: "4px"}}>
-                    <span style={{marginBottom: "4px"}}>
-                      <FileText size={14} /> Biodata / Cover Letter
+                {selectedIntern.date_of_birth && (
+                  <div className="profile-detail-row">
+                    <span>
+                      <CalendarDays size={14} /> Date of Birth
                     </span>
-                    <span style={{textAlign: "left", fontSize: "13px", lineHeight: "1.5", whiteSpace: "pre-wrap", background: "var(--background)", padding: "12px", borderRadius: "8px", width: "100%"}}>
-                      {selectedIntern.biodata}
-                    </span>
+                    <span>{selectedIntern.date_of_birth}</span>
                   </div>
                 )}
-
-                {onboarding && (
-                  <div className="profile-detail-row" style={{flexDirection: "column", alignItems: "flex-start", gap: "8px"}}>
-                    <span style={{marginBottom: "4px"}}>
-                      <ListTodo size={14} /> Onboarding Checklist
+                {selectedIntern.nationality && (
+                  <div className="profile-detail-row">
+                    <span>
+                      <Globe size={14} /> Nationality
                     </span>
                     <ul className="onboarding-admin-list">
                       {onboarding.steps.map((step) => (
@@ -365,6 +304,7 @@ function AdminInternsPage() {
                         </li>
                       ))}
                     </ul>
+                    <span>{selectedIntern.nationality}</span>
                   </div>
                 )}
               </div>

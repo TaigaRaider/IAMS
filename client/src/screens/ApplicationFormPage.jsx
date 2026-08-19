@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, logout } from "../api.js";
+import Select from "../components/Select.jsx";
 import {
   FileText,
   Send,
@@ -88,6 +89,12 @@ function ApplicationFormPage() {
     setBusy(true);
     setError("");
 
+    if (!roleId) {
+      setError("Please select a role to apply for");
+      setBusy(false);
+      return;
+    }
+
     const form = new FormData();
     form.append("role_id", String(roleId));
     if (file) form.append("resume", file);
@@ -126,23 +133,18 @@ function ApplicationFormPage() {
         <form onSubmit={handleSubmit} className="access-form">
           <div className="form-group">
             <label htmlFor="role_id">Role you are applying for</label>
-            <select
+            <Select
               id="role_id"
               className="field"
               value={roleId}
-              onChange={(e) => setRoleId(e.target.value)}
-              required
+              onChange={setRoleId}
+              placeholder="Select a role..."
               disabled={busy}
-            >
-              <option value="" disabled>
-                Select a role...
-              </option>
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.title} ({r.department})
-                </option>
-              ))}
-            </select>
+              options={roles.map((r) => ({
+                value: r.id,
+                label: `${r.title} (${r.department})`,
+              }))}
+            />
           </div>
 
           <div className="form-group">

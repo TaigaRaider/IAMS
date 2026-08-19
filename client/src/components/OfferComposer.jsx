@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Select from "./Select.jsx";
 
 const MODE_META = {
   create: { submit: "Create Offer", withMessage: false, heading: "Draft an offer" },
@@ -77,21 +78,17 @@ export default function OfferComposer({
           <label className="label" htmlFor="oc-role">
             Offered role {appliedRoleId ? "(defaults to the role applied for)" : ""}
           </label>
-          <select
+          <Select
             className="field"
             id="oc-role"
             value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
-          >
-            <option value="">
-              {appliedRoleId ? "Applied role" : "Select a role…"}
-            </option>
-            {roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.title} · {r.department}
-              </option>
-            ))}
-          </select>
+            onChange={setRoleId}
+            placeholder={appliedRoleId ? "Applied role" : "Select a role…"}
+            options={roles.map((r) => ({
+              value: r.id,
+              label: `${r.title} · ${r.department}`,
+            }))}
+          />
         </>
       )}
 

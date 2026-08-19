@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { BadgeCheck, Send, Flag, PenLine, Eye } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
+import { celebrate } from "../utils/celebrate.js";
+import { useToast } from "../components/toast-context.js";
 import EmptyState from "../components/EmptyState.jsx";
 import ConfirmHireDialog from "../components/ConfirmHireDialog.jsx";
 import { Skeleton, TableSkeleton } from "../components/Skeletons.jsx";
@@ -198,6 +200,7 @@ function OffersList({ applications, offers, busyId, onAction }) {
 
 function AdminOffersPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [applications, setApplications] = useState([]);
   const [roles, setRoles] = useState([]);
   const [offers, setOffers] = useState([]);
@@ -260,6 +263,11 @@ function AdminOffersPage() {
       await api(`/offers/${confirmTarget.id}/confirm`, { method: "POST" });
       setConfirmTarget(null);
       await load();
+      celebrate();
+      toast(
+        `${confirmTarget.applicant_name ?? "Candidate"} is now an intern!`,
+        "success",
+      );
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {

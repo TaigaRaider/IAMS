@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { compare } from "../utils/compare";
+import { celebrate } from "../utils/celebrate.js";
+import { useToast } from "./toast-context.js";
 import AcceptOfferDialog from "./AcceptOfferDialog.jsx";
 import "./OfferCard.css";
 
@@ -10,6 +12,7 @@ import "./OfferCard.css";
 // back to the parent so lists stay in sync.
 function OfferCard({ offer, onStatusChange, onAuthError }) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -31,6 +34,8 @@ function OfferCard({ offer, onStatusChange, onAuthError }) {
         body: { decline_others: declineOthers },
       });
       setDialogOpen(false);
+      celebrate();
+      toast("Offer accepted — congratulations!", "success");
       onStatusChange?.(offer.id, "Accepted");
     } catch (err) {
       fail(err);
@@ -44,6 +49,7 @@ function OfferCard({ offer, onStatusChange, onAuthError }) {
     setError("");
     try {
       await api(`/offers/${offer.id}/decline`, { method: "POST" });
+      toast("Offer declined", "info");
       onStatusChange?.(offer.id, "Declined");
     } catch (err) {
       fail(err);
@@ -61,6 +67,7 @@ function OfferCard({ offer, onStatusChange, onAuthError }) {
         method: "POST",
         body: { message: requestMessage.trim() },
       });
+      toast("Change request sent to the team", "success");
       onStatusChange?.(offer.id, "In Negotiation");
       setRequestMessage("");
       setRequestOpen(false);
@@ -246,7 +253,10 @@ function OfferCard({ offer, onStatusChange, onAuthError }) {
           <p>Offer confirmed — you're hired! Welcome aboard.</p>
           <button
             className="apply-btn"
-            onClick={() => navigate("/intern", { replace: true })}
+            onClick={() => {
+              celebrate();
+              navigate("/intern", { replace: true });
+            }}
           >
             Open intern dashboard
           </button>

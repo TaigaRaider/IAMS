@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
+import { celebrate } from "../utils/celebrate.js";
+import { useToast } from "../components/toast-context.js";
 import OfferComposer from "../components/OfferComposer.jsx";
 import ConfirmHireDialog from "../components/ConfirmHireDialog.jsx";
 import { Skeleton } from "../components/Skeletons.jsx";
@@ -94,6 +96,7 @@ function ActionBar({ status, onExtend, onToggleFinal, finalMode, onOpenConfirm }
 function AdminOfferDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { toast } = useToast();
   const [offer, setOffer] = useState(null);
   const [roles, setRoles] = useState([]);
   const [error, setError] = useState("");
@@ -179,6 +182,8 @@ function AdminOfferDetail() {
       await api(`/offers/${id}/confirm`, { method: "POST" });
       setConfirmOpen(false);
       await load();
+      celebrate();
+      toast(`${offer.applicant_name ?? "Candidate"} is now an intern!`, "success");
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {

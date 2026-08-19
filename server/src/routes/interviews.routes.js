@@ -62,7 +62,13 @@ interviewRouter.get("/interviewers", verifyAuth, requireAdmin, async (req, res, 
         user_role: users.user_role,
       })
       .from(users)
-      .where(eq(users.user_role, "admin"))
+      .where(
+        and(
+          eq(users.user_role, "admin"),
+          eq(users.is_deleted, 0),
+          eq(users.is_deactivated, 0),
+        ),
+      )
       .orderBy(asc(users.full_name))
       .all();
     res.json({ data: rows });
@@ -247,7 +253,14 @@ interviewRouter.patch("/:id/interviewer", verifyAuth, requireAdmin, async (req, 
       const interviewer = await db
         .select({ id: users.id, user_role: users.user_role })
         .from(users)
-        .where(eq(users.id, interviewerId))
+        .where(
+          and(
+            eq(users.id, interviewerId),
+            eq(users.user_role, "admin"),
+            eq(users.is_deleted, 0),
+            eq(users.is_deactivated, 0),
+          ),
+        )
         .get();
       if (!interviewer) {
         return res.status(404).json({ error: "Interviewer not found" });

@@ -27,7 +27,8 @@
     margin-bottom: 0;
   }
 
-  select.field {
+  select.field,
+  .select.field {
     flex: 1 1 220px;
   }
 
@@ -38,7 +39,7 @@
 }
 
 .tasks-table-card {
-  .card-head .status-select {
+  .card-head .select {
     margin-left: auto;
   }
 }

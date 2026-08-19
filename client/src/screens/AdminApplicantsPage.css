@@ -10,7 +10,7 @@
   border-radius: 14px;
   box-shadow: 0 2px 8px rgba(8, 6, 13, 0.06);
 
-  .status-select {
+  .select {
     flex: 1 1 180px;
     max-width: 240px;
     height: 2.5rem;

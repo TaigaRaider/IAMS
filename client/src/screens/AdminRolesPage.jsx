@@ -6,6 +6,7 @@ import ExportButton from "../components/ExportButton.jsx";
 import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
 import { Skeleton, TableSkeleton } from "../components/Skeletons.jsx";
+import Select from "../components/Select.jsx";
 import "./AdminRolesPage.css";
 
 function roleStatusClass(status) {
@@ -213,15 +214,16 @@ function AdminRolesPage() {
                           {deleting === role.id ? "Deleting…" : "Delete"}
                         </button>
                       </div>
-                      <select
-                        className="status-select role-status-select"
+                      <Select
+                        className="role-status-select"
                         value={role.status}
                         disabled={toggling === role.id}
-                        onChange={(e) => toggleRole(role.id, e.target.value)}
-                      >
-                        <option value="open">open</option>
-                        <option value="closed">closed</option>
-                      </select>
+                        onChange={(v) => toggleRole(role.id, v)}
+                        options={[
+                          { value: "open", label: "open" },
+                          { value: "closed", label: "closed" },
+                        ]}
+                      />
                     </td>
                   </tr>
                 );

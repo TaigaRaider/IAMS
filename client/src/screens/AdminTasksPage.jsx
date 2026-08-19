@@ -4,6 +4,7 @@ import { ListTodo, Plus, Trash2, CalendarClock, UserRound } from "lucide-react";
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
+import Select from "../components/Select.jsx";
 import "./AdminTasksPage.css";
 
 const TASK_STATUS_CLASS = {
@@ -77,18 +78,13 @@ function AssignTaskForm({ assignees, initialInternId, onCreated }) {
   return (
     <form className="task-form" onSubmit={handleSubmit}>
       <div className="task-form-row">
-        <select
+        <Select
           className="field"
           value={internId}
-          onChange={(e) => setInternId(e.target.value)}
-        >
-          <option value="">Assign to…</option>
-          {assignees.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
+          onChange={setInternId}
+          placeholder="Assign to…"
+          options={assignees.map((a) => ({ value: a.id, label: a.name }))}
+        />
         <input
           className="field"
           type="text"
@@ -220,16 +216,16 @@ function AdminTasksPage() {
       <section className="card table-card tasks-table-card">
         <div className="card-head">
           <h2>All tasks</h2>
-          <select
-            className="status-select"
+          <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="in_progress">In progress</option>
-            <option value="done">Done</option>
-          </select>
+            onChange={setStatusFilter}
+            options={[
+              { value: "", label: "All statuses" },
+              { value: "pending", label: "Pending" },
+              { value: "in_progress", label: "In progress" },
+              { value: "done", label: "Done" },
+            ]}
+          />
         </div>
         {filtered.length === 0 ? (
           <EmptyState

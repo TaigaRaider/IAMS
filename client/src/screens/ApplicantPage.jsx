@@ -5,6 +5,8 @@ import { api, logout } from "../api";
 import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
 import OfferCard from "../components/OfferCard.jsx";
+import JourneyTimeline from "../components/JourneyTimeline.jsx";
+import { useToast } from "../components/toast-context.js";
 import "./ApplicantPage.css";
 
 const STATUS_INFO = {
@@ -38,9 +40,11 @@ const statusClass = (status) => STATUS_INFO[status]?.className ?? "pending";
 
 function ApplicantPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [applications, setApplications] = useState([]);
   const [offers, setOffers] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [interviews, setInterviews] = useState([]);
   const [error, setError] = useState("");
   const [confirmingWithdraw, setConfirmingWithdraw] = useState(null);
   const [withdrawing, setWithdrawing] = useState(false);
@@ -56,14 +60,16 @@ function ApplicantPage() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [apps, offerData, roleData] = await Promise.all([
+      const [apps, offerData, roleData, interviewData] = await Promise.all([
         api("/applications"),
         api("/offers"),
         api("/roles"),
+        api("/interviews"),
       ]);
       setApplications(apps);
       setOffers(offerData);
       setRoles(roleData);
+      setInterviews(interviewData);
       return offerData;
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
@@ -123,6 +129,7 @@ function ApplicantPage() {
     try {
       await api(`/applications/${app.id}`, { method: "DELETE" });
       setApplications(await api("/applications"));
+      toast("Application withdrawn", "info");
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
@@ -200,6 +207,13 @@ function ApplicantPage() {
               title="No application yet"
               text="Pick an open role below to get started."
               compact
+            />
+          )}
+          {latest && (
+            <JourneyTimeline
+              status={latest.status}
+              offerStatus={latestOffer?.status ?? null}
+              interviews={interviews.length}
             />
           )}
         </section>

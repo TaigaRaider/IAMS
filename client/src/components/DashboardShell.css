@@ -9,8 +9,6 @@ header {
   background: var(--gradient-primary);
   color: var(--primary-foreground);
   box-shadow: 0 4px 20px rgba(8, 51, 68, 0.35);
-  position: relative;
-  overflow: hidden;
 
   &::before {
     content: "";

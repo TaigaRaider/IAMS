@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { api, getSession, logout, saveSession } from "../api";
 import { ShellSkeleton } from "./Skeletons.jsx";
+import OnboardingTour from "./OnboardingTour.jsx";
 
 const HOME_BY_ROLE = {
   admin: "/dashboard",
@@ -145,7 +146,12 @@ function RequireAuth({ roles, children }) {
     return <Navigate to={HOME_BY_ROLE[state.role] ?? "/login"} replace />;
   }
 
-  return children;
+  return (
+    <>
+      {children}
+      <OnboardingTour role={state.role} />
+    </>
+  );
 }
 
 export default RequireAuth;
