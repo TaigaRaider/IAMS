@@ -18,7 +18,6 @@ function ApplicationFormPage() {
 
   const [roles, setRoles] = useState([]);
   const [roleId, setRoleId] = useState(initialRoleId);
-  const [resumeUrl] = useState("");
   const [file, setFile] = useState(null);
   const [biodata, setBiodata] = useState({
     phone: "",
@@ -59,7 +58,7 @@ function ApplicationFormPage() {
         );
         const me = await api("/auth/me");
         const prefill = me.biodata ?? {};
-        setBiodata((prev) => ({
+        setBiodata({
           phone: prefill.phone ?? "",
           location: prefill.location ?? "",
           nationality: prefill.nationality ?? "",
@@ -67,7 +66,7 @@ function ApplicationFormPage() {
           education: prefill.education ?? "",
           experience: prefill.experience ?? "",
           skills: prefill.skills ?? "",
-        }));
+        });
         setCoverLetter(prefill.cover_letter ?? "");
       } catch (err) {
         if (!handleUnauthorized(err)) setError(err.message);

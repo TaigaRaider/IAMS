@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { rm } from "node:fs/promises";
 import { db } from "../db.js";
 import {
@@ -18,7 +18,7 @@ import {
 } from "../middleware/auth.middleware.js";
 import { compare } from "../utils/compare.js";
 import { sendMail } from "../utils/mailer.js";
-import { verificationEmail, resetEmail } from "../utils/email-templates.js";
+import { verificationEmail, resetEmail, emailChangeEmail } from "../utils/email-templates.js";
 import { issueCode, consumeCode, cooldownRemaining } from "../utils/tokens.js";
 
 const authRouter = Router();
@@ -84,7 +84,7 @@ function uniqueField(err) {
   if (/users\.username|users_username_unique|users_username_ci_unique/.test(target)) {
     return "username";
   }
-  if (/users\.email|users_email_unique/.test(target)) {
+  if (/users\.email|users_email_unique|users_email_active_unique/.test(target)) {
     return "email";
   }
   return null;
@@ -269,6 +269,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
       .select({
         id: users.id,
         full_name: users.full_name,
+        email: users.email,
         user_role: users.user_role,
         is_deactivated: users.is_deactivated,
         phone: users.phone,
@@ -311,6 +312,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
           data: {
             role: "intern",
             full_name: user.full_name,
+            email: user.email,
             deactivated: false,
             avatar_url: user.avatar_url,
             biodata: {
@@ -332,6 +334,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
       data: {
         role: freshRole,
         full_name: user.full_name,
+        email: user.email,
         deactivated: compare(Number(user.is_deactivated), 1),
         avatar_url: user.avatar_url,
         biodata: {
@@ -697,6 +700,141 @@ authRouter.post("/resend-verification", async (req, res, next) => {
       }
     }
     res.json({ data: { ok: true, message: "If an account exists for this email, a verification code has been sent." } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Request an email change: sends a verification code to the NEW address.
+// The address only changes once the code is confirmed.
+authRouter.post("/account/email", verifyAuth, async (req, res, next) => {
+  const { new_email } = req.body ?? {};
+  const clean = cleanEmail(new_email);
+
+  if (!EMAIL_RE.test(clean)) {
+    return res.status(400).json({ error: "A valid email is required" });
+  }
+
+  try {
+    const userId = Number(req.user.sub);
+    const user = await db
+      .select({ id: users.id, full_name: users.full_name, email: users.email, is_deleted: users.is_deleted })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
+    if (!user || compare(Number(user.is_deleted), 1)) {
+      return res.status(401).json({ error: "Account doesn't exist" });
+    }
+    if (compare(clean, user.email)) {
+      return res.status(400).json({ error: "That's already your email address" });
+    }
+    const taken = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.email, clean), eq(users.is_deleted, 0)))
+      .get();
+    if (taken) {
+      return res.status(409).json({ error: "That email is already in use by another account" });
+    }
+
+    const wait = await cooldownRemaining(db, userId, "email_change");
+    if (wait > 0) {
+      return res
+        .status(429)
+        .json({ error: "Please wait before requesting another code", retryAfter: Math.ceil(wait / 1000) });
+    }
+
+    const code = await issueCode(db, userId, "email_change");
+    // Pin the pending address to the token so the confirm step can't swap in
+    // a different (unverified) inbox.
+    await db
+      .update(authTokens)
+      .set({ data: clean })
+      .where(and(eq(authTokens.user_id, userId), eq(authTokens.kind, "email_change")))
+      .run();
+    if (isDev) {
+      console.log(
+        `[mailer] email_change code for ${clean}: ${code} (dev mirror in case mail doesn't arrive)`,
+      );
+    }
+    void sendMail({
+      to: clean,
+      subject: "Confirm your new IAMS email",
+      html: emailChangeEmail({
+        name: user.full_name.split(" ")[0],
+        newEmail: clean,
+        code,
+      }),
+    });
+    res.json({ data: { ok: true, message: `A verification code was sent to ${clean}` } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Confirm the email change with the code sent to the new address. The new
+// address is re-sent here so the code (which only arrived at that inbox) is
+// what authorizes the swap.
+authRouter.post("/account/email/confirm", verifyAuth, async (req, res, next) => {
+  const { code, new_email } = req.body ?? {};
+  const cleanCode = typeof code === "string" ? code.trim() : "";
+  const clean = cleanEmail(new_email);
+
+  if (!CODE_RE.test(cleanCode)) {
+    return res.status(400).json({ error: "Enter the 6-digit code from your email" });
+  }
+  if (!EMAIL_RE.test(clean)) {
+    return res.status(400).json({ error: "A valid email is required" });
+  }
+
+  try {
+    const userId = Number(req.user.sub);
+    const user = await db
+      .select({ id: users.id, email: users.email, is_deleted: users.is_deleted })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
+    if (!user || compare(Number(user.is_deleted), 1)) {
+      return res.status(401).json({ error: "Account doesn't exist" });
+    }
+    if (compare(clean, user.email)) {
+      return res.status(400).json({ error: "That's already your email address" });
+    }
+    const taken = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.email, clean), eq(users.is_deleted, 0)))
+      .get();
+    if (taken) {
+      return res.status(409).json({ error: "That email is already in use by another account" });
+    }
+
+    const pending = await db
+      .select({ data: authTokens.data, used_at: authTokens.used_at })
+      .from(authTokens)
+      .where(and(eq(authTokens.user_id, userId), eq(authTokens.kind, "email_change")))
+      .orderBy(desc(authTokens.id))
+      .get();
+    if (!pending || pending.used_at || !compare(pending.data, clean)) {
+      return res.status(400).json({ error: "The code doesn't match the requested email" });
+    }
+
+    const result = await consumeCode(db, userId, "email_change", cleanCode);
+    if (!result.ok) {
+      if (result.reason === "code" && result.left > 0) {
+        return res.status(400).json({
+          error: `Invalid code — ${result.left} ${result.left === 1 ? "attempt" : "attempts"} left`,
+        });
+      }
+      return res.status(400).json({ error: "Invalid or expired code" });
+    }
+
+    await db
+      .update(users)
+      .set({ email: clean })
+      .where(eq(users.id, userId))
+      .run();
+    res.json({ data: { email: clean } });
   } catch (err) {
     next(err);
   }

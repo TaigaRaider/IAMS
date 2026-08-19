@@ -9,6 +9,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { api, logout } from "../api";
+import ExportButton from "../components/ExportButton.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import "./AdminApplicantsPage.css";
 
@@ -107,6 +108,9 @@ function ApplicantsPage() {
   return (
     <div className="page">
       <h1 className="page-title">Applicants</h1>
+      <div className="page-title-row">
+        <ExportButton path="/export/applicants.csv" filename="applicants.csv" label="Export CSV" />
+      </div>
       {error && <p className="form-error">{error}</p>}
       {applicants.length > 0 && (
         <div className="filters-row">

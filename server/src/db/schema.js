@@ -32,7 +32,11 @@ export const users = sqliteTable(
       .default(sql`(datetime('now'))`),
   },
   (t) => [
-    unique("users_email_unique").on(t.email),
+    // Email is unique only among live accounts — a soft-deleted account
+    // (is_deleted = 1) releases its address so it can be reused.
+    uniqueIndex("users_email_active_unique")
+      .on(t.email)
+      .where(sql`${t.is_deleted} = 0`),
     unique("users_username_unique").on(t.username),
     uniqueIndex("users_username_ci_unique").on(sql`lower(${t.username})`),
   ],
@@ -90,6 +94,8 @@ export const interviews = sqliteTable(
       .notNull()
       .default("Pending"),
     interviewer_id: integer("interviewer_id").references(() => users.id),
+    venue: text("venue", { enum: ["online", "onsite"] }),
+    venue_info: text("venue_info"),
   },
 );
 
@@ -185,6 +191,7 @@ export const authTokens = sqliteTable(
     attempts: integer("attempts").notNull().default(0),
     expires_at: text("expires_at").notNull(),
     used_at: text("used_at"),
+    data: text("data"),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

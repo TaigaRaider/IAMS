@@ -50,4 +50,42 @@ dashboardRouter.get("/stats", verifyAuth, requireAdmin, async (req, res, next) =
   }
 });
 
+dashboardRouter.get("/pipeline", verifyAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const rows = await db
+      .select({
+        role_id: roles.id,
+        role_title: roles.title,
+        department: roles.department,
+        status: applications.status,
+        count: sql`COUNT(${applications.id})`,
+      })
+      .from(applications)
+      .innerJoin(roles, eq(roles.id, applications.role_id))
+      .groupBy(roles.id, roles.title, roles.department, applications.status)
+      .orderBy(roles.title, applications.status)
+      .all();
+
+    const byRole = new Map();
+    for (const r of rows) {
+      if (!byRole.has(r.role_id)) {
+        byRole.set(r.role_id, {
+          role_id: r.role_id,
+          role_title: r.role_title,
+          department: r.department ?? "",
+          total: 0,
+          statuses: {},
+        });
+      }
+      const entry = byRole.get(r.role_id);
+      entry.statuses[r.status] = Number(r.count);
+      entry.total += Number(r.count);
+    }
+
+    res.json({ data: { roles: [...byRole.values()] } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export { dashboardRouter };

@@ -59,6 +59,22 @@ function useUnauthorized(navigate) {
   );
 }
 
+function VenueBadge({ venue, venueInfo }) {
+  if (!venue) return <span className="muted">—</span>;
+  const online = compare(venue, "online");
+  return (
+    <span className={`venue-badge ${online ? "venue-online" : "venue-onsite"}`}>
+      {online ? "Online" : "Onsite"}
+      {venueInfo ? (
+        <span className="venue-info" title={venueInfo}>
+          {" "}
+          · {venueInfo}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function ApplicantInterviews() {
   const navigate = useNavigate();
   const handleUnauthorized = useUnauthorized(navigate);
@@ -138,6 +154,7 @@ function ApplicantInterviews() {
               <tr>
                 <th>Role</th>
                 <th>Preferred Time</th>
+                <th>Venue</th>
                 <th>Status</th>
                 <th>Interviewer</th>
                 <th></th>
@@ -152,6 +169,9 @@ function ApplicantInterviews() {
                       <strong>{i.role_title ?? "—"}</strong>
                     </td>
                     <td>{formatDateTime(i.scheduled_at)}</td>
+                    <td>
+                      <VenueBadge venue={i.venue} venueInfo={i.venue_info} />
+                    </td>
                     <td>
                       <span className={`status ${meta.className}`}>
                         {meta.label}
@@ -197,6 +217,8 @@ function AdminInterviews() {
   const [busy, setBusy] = useState(null);
   const [selectedApp, setSelectedApp] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [venue, setVenue] = useState("online");
+  const [venueInfo, setVenueInfo] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -235,10 +257,14 @@ function AdminInterviews() {
         body: {
           application_id: Number(selectedApp),
           scheduled_at: new Date(scheduledAt).toISOString(),
+          venue: venue || undefined,
+          venue_info: venueInfo.trim() || undefined,
         },
       });
       setSelectedApp("");
       setScheduledAt("");
+      setVenue("online");
+      setVenueInfo("");
       await load();
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
@@ -318,6 +344,30 @@ function AdminInterviews() {
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
           />
+          <div className="venue-row">
+            <select
+              className="field"
+              value={venue}
+              onChange={(e) => {
+                setVenue(e.target.value);
+                setVenueInfo("");
+              }}
+            >
+              <option value="online">Online</option>
+              <option value="onsite">Onsite</option>
+            </select>
+            <input
+              className="field"
+              type="text"
+              placeholder={
+                venue === "online"
+                  ? "Meeting link (optional)"
+                  : "Venue address (optional)"
+              }
+              value={venueInfo}
+              onChange={(e) => setVenueInfo(e.target.value)}
+            />
+          </div>
           <button className="apply-btn" type="submit" disabled={submitting}>
             <CalendarPlus size={16} />
             {submitting ? "Scheduling..." : "Schedule Interview"}
@@ -339,6 +389,7 @@ function AdminInterviews() {
                 <th>Applicant</th>
                 <th>Role</th>
                 <th>Preferred Time</th>
+                <th>Venue</th>
                 <th>Status</th>
                 <th>Interviewer</th>
                 <th>Actions</th>
@@ -359,6 +410,9 @@ function AdminInterviews() {
                     </td>
                     <td>{i.role_title ?? "—"}</td>
                     <td>{formatDateTime(i.scheduled_at)}</td>
+                    <td>
+                      <VenueBadge venue={i.venue} venueInfo={i.venue_info} />
+                    </td>
                     <td>
                       <span className={`status ${meta.className}`}>
                         {meta.label}

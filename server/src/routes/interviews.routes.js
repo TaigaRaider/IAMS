@@ -25,6 +25,8 @@ const interviewSelect = {
   status: interviews.status,
   interviewer_id: interviews.interviewer_id,
   interviewer_name: interviewers.full_name,
+  venue: interviews.venue,
+  venue_info: interviews.venue_info,
 };
 
 // GET /api/interviews — admin sees all; everyone else sees only their own
@@ -71,9 +73,12 @@ interviewRouter.get("/interviewers", verifyAuth, requireAdmin, async (req, res, 
 
 // POST /api/interviews — admins schedule an interview on an applicant's application
 interviewRouter.post("/", verifyAuth, requireAdmin, async (req, res, next) => {
-  const { application_id, scheduled_at } = req.body ?? {};
+  const { application_id, scheduled_at, venue, venue_info } = req.body ?? {};
   if (!application_id || !scheduled_at) {
     return res.status(400).json({ error: "application_id and scheduled_at are required" });
+  }
+  if (venue && !["online", "onsite"].includes(venue)) {
+    return res.status(400).json({ error: "venue must be online or onsite" });
   }
 
   const applicationId = Number(application_id);
@@ -116,12 +121,20 @@ interviewRouter.post("/", verifyAuth, requireAdmin, async (req, res, next) => {
         application_id: applicationId,
         scheduled_at,
         status: "Pending",
+        venue: venue ?? null,
+        venue_info: venue ? (venue_info ?? null) : null,
       })
       .run();
+    const venueText =
+      venue === "online"
+        ? `online${venue_info ? ` (${venue_info})` : ""}`
+        : venue === "onsite"
+          ? `onsite${venue_info ? ` (${venue_info})` : ""}`
+          : "TBD";
     notify(
       application.applicant_id,
       "interview",
-      `An interview for ${application.role_title} has been scheduled for ${scheduled_at}`,
+      `An interview for ${application.role_title} has been scheduled for ${scheduled_at} (${venueText})`,
     );
     void sendMail({
       to: application.applicant_email,
@@ -131,6 +144,8 @@ interviewRouter.post("/", verifyAuth, requireAdmin, async (req, res, next) => {
         roleTitle: application.role_title,
         scheduledAt: scheduled_at,
         status: "Pending",
+        venue,
+        venueInfo: venue_info,
       }),
     });
     res.status(201).json({ data: { id: Number(result.lastInsertRowid) } });
@@ -140,10 +155,14 @@ interviewRouter.post("/", verifyAuth, requireAdmin, async (req, res, next) => {
 });
 
 // PATCH /api/interviews/:id/status — admin confirms availability / completes / cancels
+// (may also update the venue and venue details in the same call)
 interviewRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res, next) => {
-  const { status } = req.body ?? {};
+  const { status, venue, venue_info } = req.body ?? {};
   if (!["Pending", "Confirmed", "Done", "Cancelled"].includes(status)) {
     return res.status(400).json({ error: "Invalid interview status" });
+  }
+  if (venue && !["online", "onsite"].includes(venue)) {
+    return res.status(400).json({ error: "venue must be online or onsite" });
   }
   try {
     const existing = await db
@@ -154,6 +173,8 @@ interviewRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res, 
         applicant_email: users.email,
         role_title: roles.title,
         scheduled_at: interviews.scheduled_at,
+        venue: interviews.venue,
+        venue_info: interviews.venue_info,
       })
       .from(interviews)
       .leftJoin(applications, eq(applications.id, interviews.application_id))
@@ -164,15 +185,28 @@ interviewRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res, 
     if (!existing) {
       return res.status(404).json({ error: "Interview not found" });
     }
+    const nextVenue = venue ?? existing.venue;
+    const nextVenueInfo =
+      venue !== undefined ? (venue_info ?? null) : existing.venue_info;
     await db
       .update(interviews)
-      .set({ status })
+      .set({
+        status,
+        venue: nextVenue,
+        venue_info: nextVenueInfo,
+      })
       .where(eq(interviews.id, Number(req.params.id)))
       .run();
+    const venueText =
+      nextVenue === "online"
+        ? `online${nextVenueInfo ? ` (${nextVenueInfo})` : ""}`
+        : nextVenue === "onsite"
+          ? `onsite${nextVenueInfo ? ` (${nextVenueInfo})` : ""}`
+          : null;
     notify(
       existing.applicant_id,
       "interview",
-      `Your interview for ${existing.role_title} is now ${status}`,
+      `Your interview for ${existing.role_title} is now ${status}${venueText ? ` — venue: ${venueText}` : ""}`,
     );
     void sendMail({
       to: existing.applicant_email,
@@ -182,9 +216,11 @@ interviewRouter.patch("/:id/status", verifyAuth, requireAdmin, async (req, res, 
         roleTitle: existing.role_title,
         scheduledAt: existing.scheduled_at,
         status,
+        venue: nextVenue,
+        venueInfo: nextVenueInfo,
       }),
     });
-    res.json({ data: { id: Number(req.params.id), status } });
+    res.json({ data: { id: Number(req.params.id), status, venue: nextVenue, venue_info: nextVenueInfo } });
   } catch (err) {
     next(err);
   }

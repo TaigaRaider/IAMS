@@ -89,6 +89,18 @@ export const resetEmail = ({ name, code }) =>
     footer: "If you didn't request a password reset, you can safely ignore this email — your password won't change until you use this code.",
   });
 
+export const emailChangeEmail = ({ name, newEmail, code }) =>
+  shell({
+    title: "Confirm your new IAMS email",
+    preheader: "Your 6-digit email change code is here",
+    heading: `Confirm your new email, ${name}`,
+    intro: `You asked to change the email on your IAMS Internship account to ${newEmail}. Enter the code below to finish the change.`,
+    bodyHtml: codeBlock(code),
+    actionUrl: `${process.env.ORIGIN}/profile`,
+    actionLabel: "Go to my profile",
+    footer: "If you didn't request this email change, you can safely ignore this email — your address won't change until you use this code.",
+  });
+
 const detailRow = (label, value) => `
 <tr>
   <td style="padding:6px 0;font-size:14px;color:${MUTED};width:130px;vertical-align:top;">${label}</td>
@@ -129,7 +141,7 @@ export const offerEmail = ({ name, roleTitle, status, positionTitle }) =>
     footer: "Offers are visible from the Applicant dashboard. This is an automated update about your IAMS Internship offer.",
   });
 
-export const interviewEmail = ({ name, roleTitle, scheduledAt, status }) =>
+export const interviewEmail = ({ name, roleTitle, scheduledAt, status, venue, venueInfo }) =>
   shell({
     title: `Interview ${status}${scheduledAt ? ` — ${scheduledAt}` : ""}`,
     preheader: `Interview for ${roleTitle} — ${status}`,
@@ -140,6 +152,14 @@ export const interviewEmail = ({ name, roleTitle, scheduledAt, status }) =>
     bodyHtml: detailsTable([
       detailRow("Role", roleTitle),
       detailRow("Scheduled", scheduledAt ?? "—"),
+      detailRow(
+        "Venue",
+        venue
+          ? venue === "online"
+            ? `Online${venueInfo ? ` · ${venueInfo}` : ""}`
+            : `Onsite${venueInfo ? ` · ${venueInfo}` : ""}`
+          : "—",
+      ),
       detailRow("Status", status),
     ]),
     actionUrl: `${process.env.ORIGIN}/applicant`,

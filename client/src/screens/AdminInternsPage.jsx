@@ -15,6 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import { api, logout } from "../api";
+import ExportButton from "../components/ExportButton.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import "./AdminInternsPage.css";
 
@@ -140,6 +141,9 @@ function AdminInternsPage() {
   return (
     <div className="page">
       <h1 className="page-title">Interns</h1>
+      <div className="page-title-row">
+        <ExportButton path="/export/interns.csv" filename="interns.csv" label="Export CSV" />
+      </div>
       {error && <p className="form-error">{error}</p>}
       {interns.length === 0 ? (
         <div className="card">

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus, Briefcase, Pencil, Trash2 } from "lucide-react";
 import { api, logout } from "../api";
+import ExportButton from "../components/ExportButton.jsx";
 import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
 import { Skeleton, TableSkeleton } from "../components/Skeletons.jsx";
@@ -121,7 +122,7 @@ function AdminRolesPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">Roles</h1>
-        
+        <ExportButton path="/export/roles.csv" filename="roles.csv" label="Export CSV" />
       </div>
       <Link to="/dashboard/add" className="add-btn">
           <Plus size={16} />

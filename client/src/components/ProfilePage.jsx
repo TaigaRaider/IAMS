@@ -9,6 +9,7 @@ import {
   User,
   BadgeCheck,
   KeyRound,
+  Mail,
 } from "lucide-react";
 import { api, getSession, logout, saveSession } from "../api";
 import "./ProfilePage.css";
@@ -33,6 +34,12 @@ function ProfilePage() {
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [pwBusy, setPwBusy] = useState(false);
   const [pwMsg, setPwMsg] = useState(null);
+
+  // Email change state
+  const [emailStep, setEmailStep] = useState("idle"); // idle | sent | done
+  const [emailForm, setEmailForm] = useState({ newEmail: "", code: "" });
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailMsg, setEmailMsg] = useState(null);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -134,6 +141,55 @@ function ProfilePage() {
         setPwMsg({ type: "error", text: err.message });
     } finally {
       setPwBusy(false);
+    }
+  };
+
+  const requestEmailChange = async (e) => {
+    e.preventDefault();
+    setEmailMsg(null);
+    setEmailBusy(true);
+    try {
+      await api("/auth/account/email", {
+        method: "POST",
+        body: { new_email: emailForm.newEmail.trim() },
+      });
+      setEmailStep("sent");
+      setEmailMsg({
+        type: "success",
+        text: `A verification code was sent to ${emailForm.newEmail.trim()}`,
+      });
+    } catch (err) {
+      if (!handleUnauthorized(err))
+        setEmailMsg({ type: "error", text: err.message });
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
+  const confirmEmailChange = async (e) => {
+    e.preventDefault();
+    setEmailMsg(null);
+    setEmailBusy(true);
+    try {
+      const updated = await api("/auth/account/email/confirm", {
+        method: "POST",
+        body: {
+          new_email: emailForm.newEmail.trim(),
+          code: emailForm.code.trim(),
+        },
+      });
+      setProfile((prev) => ({ ...prev, email: updated.email }));
+      setEmailStep("done");
+      setEmailForm({ newEmail: "", code: "" });
+      setEmailMsg({
+        type: "success",
+        text: "Email updated successfully!",
+      });
+    } catch (err) {
+      if (!handleUnauthorized(err))
+        setEmailMsg({ type: "error", text: err.message });
+    } finally {
+      setEmailBusy(false);
     }
   };
 
@@ -306,6 +362,10 @@ function ProfilePage() {
               <dd>{profile?.full_name ?? "—"}</dd>
             </div>
             <div className="detail-row">
+              <dt>Email</dt>
+              <dd>{profile?.email ?? "—"}</dd>
+            </div>
+            <div className="detail-row">
               <dt>Role</dt>
               <dd className="capitalize flex-dd">
                 {profile?.role ?? "—"}
@@ -313,6 +373,85 @@ function ProfilePage() {
               </dd>
             </div>
           </dl>
+        )}
+      </div>
+
+      <div className="card profile-card email-card">
+        <div className="security-header">
+          <Mail size={18} className="security-icon" />
+          <h2 className="cute-section-title">Email Address</h2>
+        </div>
+        <p className="muted security-note">
+          {emailStep === "done"
+            ? "Your email is up to date."
+            : "Changing your email sends a verification code to the new address before it takes effect."}
+        </p>
+        {emailMsg && <p className={`security-msg ${emailMsg.type}`}>{emailMsg.text}</p>}
+        {emailStep !== "done" && (
+          <form
+            onSubmit={emailStep === "sent" ? confirmEmailChange : requestEmailChange}
+            className="access-form security-form"
+          >
+            <div className="cute-form-group">
+              <label htmlFor="new-email">New email</label>
+              <input
+                id="new-email"
+                className="field cute-input"
+                type="email"
+                value={emailForm.newEmail}
+                onChange={(e) =>
+                  setEmailForm((f) => ({ ...f, newEmail: e.target.value }))
+                }
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+            {emailStep === "sent" && (
+              <div className="cute-form-group">
+                <label htmlFor="email-code">Verification code</label>
+                <input
+                  id="email-code"
+                  className="field cute-input"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  value={emailForm.code}
+                  onChange={(e) =>
+                    setEmailForm((f) => ({ ...f, code: e.target.value }))
+                  }
+                  placeholder="6-digit code"
+                  required
+                />
+              </div>
+            )}
+            <div className="cute-form-actions">
+              {emailStep === "sent" && (
+                <button
+                  type="button"
+                  className="btn ghost-btn cute-btn-secondary"
+                  onClick={() => {
+                    setEmailStep("idle");
+                    setEmailMsg(null);
+                    setEmailForm({ newEmail: "", code: "" });
+                  }}
+                >
+                  Start over
+                </button>
+              )}
+              <button
+                type="submit"
+                className="btn cute-btn-primary"
+                disabled={emailBusy}
+              >
+                {emailBusy
+                  ? "Working..."
+                  : emailStep === "sent"
+                    ? "Confirm Email"
+                    : "Send Code"}
+              </button>
+            </div>
+          </form>
         )}
       </div>
 

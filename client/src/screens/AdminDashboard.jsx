@@ -15,6 +15,7 @@ import {
 import { api, logout } from "../api";
 import { compare } from "../utils/compare";
 import EmptyState from "../components/EmptyState.jsx";
+import ExportButton from "../components/ExportButton.jsx";
 import { OverviewSkeleton } from "../components/Skeletons.jsx";import AddRoleForm from "../components/AddRoleForm.jsx";
 import DashboardShell from "../components/DashboardShell.jsx";
 import DeptDoughnut from "../components/DeptDoughnut.jsx";
@@ -40,21 +41,26 @@ const ADMIN_NAV = [
   { to: "/profile", icon: UserRound, label: "Profile" },
 ];
 
+const PIPELINE_STATUSES = ["In Review", "Shortlisted", "Rejected", "Hired"];
+
 function Overview() {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [pipeline, setPipeline] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
-        const [statData, appData] = await Promise.all([
+        const [statData, appData, pipeData] = await Promise.all([
           api("/dashboard/stats"),
           api("/applications"),
+          api("/dashboard/pipeline"),
         ]);
         setStats(statData);
         setApplications(appData);
+        setPipeline(pipeData.roles ?? []);
       } catch (err) {
         if (String(err.message).includes("token") || String(err.message).includes("401")) {
           logout();
@@ -175,6 +181,65 @@ function Overview() {
             
           )}
         </div>
+      </div>
+      <div className="card">
+        <div className="card-head">
+          <h2>Pipeline by Role</h2>
+          <div className="card-head-actions">
+            <ExportButton
+              path="/export/pipeline.csv"
+              filename="pipeline.csv"
+              label="CSV"
+            />
+            <ExportButton
+              path="/export/pipeline.pdf"
+              filename="pipeline.pdf"
+              label="PDF"
+            />
+            <Link to="/dashboard/roles" className="view-all">
+              Manage roles
+            </Link>
+          </div>
+        </div>
+        {pipeline.length === 0 ? (
+          <EmptyState
+            icon={BarChart3}
+            title="No pipeline data yet"
+            text="Application counts per role and stage will show here."
+            compact
+          />
+        ) : (
+          <div className="table-wrap">
+            <table className="admin-table pipeline-table">
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Department</th>
+                  {PIPELINE_STATUSES.map((s) => (
+                    <th key={s}>{s}</th>
+                  ))}
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pipeline.map((r) => (
+                  <tr key={r.role_id}>
+                    <td>
+                      <strong>{r.role_title}</strong>
+                    </td>
+                    <td className="capitalize">{r.department || "—"}</td>
+                    {PIPELINE_STATUSES.map((s) => (
+                      <td key={s} className="num">
+                        {r.statuses[s] ?? 0}
+                      </td>
+                    ))}
+                    <td className="num total">{r.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </>
   );
