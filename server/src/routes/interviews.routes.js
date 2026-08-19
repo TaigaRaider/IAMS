@@ -49,7 +49,7 @@ interviewRouter.get("/", verifyAuth, async (req, res, next) => {
   }
 });
 
-// GET /api/interviews/interviewers — admin: candidate list for assignment
+// GET /api/interviews/interviewers — admin: only admins can work as interviewers
 interviewRouter.get("/interviewers", verifyAuth, requireAdmin, async (req, res, next) => {
   try {
     const rows = await db
@@ -60,6 +60,7 @@ interviewRouter.get("/interviewers", verifyAuth, requireAdmin, async (req, res, 
         user_role: users.user_role,
       })
       .from(users)
+      .where(eq(users.user_role, "admin"))
       .orderBy(asc(users.full_name))
       .all();
     res.json({ data: rows });
@@ -68,9 +69,8 @@ interviewRouter.get("/interviewers", verifyAuth, requireAdmin, async (req, res, 
   }
 });
 
-// POST /api/interviews — applicant requests an interview on their application;
-// an admin may also create one on behalf of any applicant.
-interviewRouter.post("/", verifyAuth, async (req, res, next) => {
+// POST /api/interviews — admins schedule an interview on an applicant's application
+interviewRouter.post("/", verifyAuth, requireAdmin, async (req, res, next) => {
   const { application_id, scheduled_at } = req.body ?? {};
   if (!application_id || !scheduled_at) {
     return res.status(400).json({ error: "application_id and scheduled_at are required" });
@@ -94,12 +94,6 @@ interviewRouter.post("/", verifyAuth, async (req, res, next) => {
       .get();
     if (!application) {
       return res.status(404).json({ error: "Application not found" });
-    }
-
-    const isAdmin = compare(req.user.role, "admin");
-    const isOwner = compare(Number(application.applicant_id), Number(req.user.sub));
-    if (!isAdmin && !isOwner) {
-      return res.status(403).json({ error: "You can only request an interview for your own application" });
     }
 
     const existing = await db
@@ -215,12 +209,15 @@ interviewRouter.patch("/:id/interviewer", verifyAuth, requireAdmin, async (req, 
     if (interviewer_id !== null && interviewer_id !== undefined && interviewer_id !== "") {
       interviewerId = Number(interviewer_id);
       const interviewer = await db
-        .select({ id: users.id })
+        .select({ id: users.id, user_role: users.user_role })
         .from(users)
         .where(eq(users.id, interviewerId))
         .get();
       if (!interviewer) {
         return res.status(404).json({ error: "Interviewer not found" });
+      }
+      if (!compare(interviewer.user_role, "admin")) {
+        return res.status(400).json({ error: "Interviewer must be an admin" });
       }
     }
 

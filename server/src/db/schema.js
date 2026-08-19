@@ -26,6 +26,7 @@ export const users = sqliteTable(
     experience: text("experience"),
     skills: text("skills"),
     cover_letter: text("cover_letter"),
+    avatar_url: text("avatar_url"),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

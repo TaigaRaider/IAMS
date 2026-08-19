@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Link, Routes, Route, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -69,11 +69,41 @@ const formatDate = (value) => {
 };
 
 const DEFAULT_ONBOARDING_STEPS = [
-  { step_key: "submit_documents", label: "Submit required documents" },
-  { step_key: "complete_forms", label: "Complete onboarding forms" },
-  { step_key: "work_email", label: "Set up work email & accounts" },
-  { step_key: "handbook", label: "Review employee handbook" },
-  { step_key: "meet_team", label: "Meet your team & mentor" },
+  {
+    step_key: "submit_documents",
+    label: "Submit required documents",
+    href: "/profile",
+    guide:
+      "Upload or update your CV and any requested documents (ID, certificates) in your Profile. If you can't scan them yet, email them to hr@iams.dev and HR will mark this done for you.",
+  },
+  {
+    step_key: "complete_forms",
+    label: "Complete onboarding forms",
+    href: "/profile",
+    guide:
+      "Fill out every field in your Profile (contact details, education, experience, skills) — it doubles as your onboarding paperwork. Double-check everything before saving.",
+  },
+  {
+    step_key: "work_email",
+    label: "Set up work email & accounts",
+    href: null,
+    guide:
+      "Your @iams.dev account invite and the IT setup guide are sent to your personal email after you're hired. If you haven't received them within 48 hours, reach out to HR from the Contacts card.",
+  },
+  {
+    step_key: "handbook",
+    label: "Review employee handbook",
+    href: null,
+    guide:
+      "The employee handbook is attached to your welcome email. It covers policies, leave, conduct, and expectations — skim it, then ask HR anything that's unclear.",
+  },
+  {
+    step_key: "meet_team",
+    label: "Meet your team & mentor",
+    href: null,
+    guide:
+      "Your mentor will reach out to schedule the intro session — keep an eye on notifications and your inbox. You can also email your mentor directly from the Contacts card.",
+  },
 ];
 
 function InternOverview() {
@@ -88,6 +118,7 @@ function InternOverview() {
 
   const [onboardingSteps, setOnboardingSteps] = useState(DEFAULT_ONBOARDING_STEPS);
   const [onboardingLoading, setOnboardingLoading] = useState(true);
+  const [openGuide, setOpenGuide] = useState(null);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -288,18 +319,49 @@ function InternOverview() {
           </div>
           <ul className="checklist">
             {onboardingSteps.map((step) => (
-              <li 
-                key={step.step_key} 
-                className={step.done ? "done" : ""} 
-                onClick={() => toggleOnboardingStep(step)}
-                style={{ cursor: onboardingLoading ? "default" : "pointer", transition: "background-color 0.2s" }}
-              >
-                {step.done ? (
-                  <CheckCircle2 className="check-icon done" size={20} />
-                ) : (
-                  <Circle className="check-icon" size={20} />
+              <li key={step.step_key} className={step.done ? "done" : ""}>
+                <div
+                  className="checklist-row"
+                  onClick={() => toggleOnboardingStep(step)}
+                  style={{
+                    cursor: onboardingLoading ? "default" : "pointer",
+                    transition: "background-color 0.2s",
+                  }}
+                >
+                  {step.done ? (
+                    <CheckCircle2 className="check-icon done" size={20} />
+                  ) : (
+                    <Circle className="check-icon" size={20} />
+                  )}
+                  <span style={{ userSelect: "none", flex: 1 }}>
+                    {step.label}
+                  </span>
+                  {step.guide && (
+                    <button
+                      type="button"
+                      className="step-guide-btn"
+                      aria-expanded={openGuide === step.step_key}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenGuide(
+                          openGuide === step.step_key ? null : step.step_key,
+                        );
+                      }}
+                    >
+                      How to complete
+                    </button>
+                  )}
+                </div>
+                {openGuide === step.step_key && step.guide && (
+                  <div className="step-guide">
+                    <p>{step.guide}</p>
+                    {step.href && (
+                      <Link to={step.href} className="step-guide-link">
+                        Go to <strong>{step.label}</strong> →
+                      </Link>
+                    )}
+                  </div>
                 )}
-                <span style={{ userSelect: "none" }}>{step.label}</span>
               </li>
             ))}
           </ul>

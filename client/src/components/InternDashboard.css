@@ -116,6 +116,60 @@
   }
 }
 
+.checklist li {
+  flex-wrap: wrap;
+}
+
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.step-guide-btn {
+  border: 1px solid var(--border);
+  background: var(--card-background);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+  }
+}
+
+.step-guide {
+  flex-basis: 100%;
+  margin-top: 2px;
+  padding: 10px 12px;
+  background: #f8f9fb;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+
+  p {
+    margin: 0 0 6px;
+    color: var(--muted);
+  }
+}
+
+.step-guide-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .timeline {
   list-style: none;
   margin: 0;

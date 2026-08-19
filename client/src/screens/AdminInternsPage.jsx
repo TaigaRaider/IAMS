@@ -350,7 +350,14 @@ function AdminInternsPage() {
                           >
                             {step.done ? <Check size={14} /> : <Circle size={14} />}
                           </button>
-                          <span>{step.label}</span>
+                          <div className="onboarding-step-info">
+                            <span>{step.label}</span>
+                            {step.guide && (
+                              <small className="onboarding-step-guide">
+                                {step.guide}
+                              </small>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>

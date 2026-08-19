@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   CalendarClock,
   CalendarCheck,
+  CalendarPlus,
   CalendarX,
   CheckCircle2,
   UserRound,
-  Send,
 } from "lucide-react";
 import { api, getSession, logout } from "../api";
 import { compare } from "../utils/compare";
@@ -15,13 +15,11 @@ import { Skeleton, TableSkeleton } from "./Skeletons.jsx";
 import "./InterviewPage.css";
 
 const STATUS_META = {
-  Pending: { label: "Requested", className: "pending" },
+  Pending: { label: "Pending", className: "pending" },
   Confirmed: { label: "Confirmed", className: "shortlisted" },
   Done: { label: "Done", className: "accepted" },
   Cancelled: { label: "Cancelled", className: "rejected" },
 };
-
-const ACTIVE_STATUSES = ["Pending", "Confirmed"];
 
 const initials = (name) =>
   (name ?? "?")
@@ -64,23 +62,14 @@ function useUnauthorized(navigate) {
 function ApplicantInterviews() {
   const navigate = useNavigate();
   const handleUnauthorized = useUnauthorized(navigate);
-  const [applications, setApplications] = useState([]);
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedApp, setSelectedApp] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(null);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const [apps, ints] = await Promise.all([
-        api("/applications"),
-        api("/interviews"),
-      ]);
-      setApplications(apps);
-      setInterviews(ints);
+      setInterviews(await api("/interviews"));
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
@@ -91,32 +80,6 @@ function ApplicantInterviews() {
   useEffect(() => {
     Promise.resolve().then(load);
   }, [load]);
-
-  const requestInterview = async (e) => {
-    e.preventDefault();
-    setError("");
-    if (!selectedApp || !scheduledAt) {
-      setError("Pick an application and a preferred date & time");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await api("/interviews", {
-        method: "POST",
-        body: {
-          application_id: Number(selectedApp),
-          scheduled_at: new Date(scheduledAt).toISOString(),
-        },
-      });
-      setSelectedApp("");
-      setScheduledAt("");
-      await load();
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const cancelInterview = async (id) => {
     setCancelling(id);
@@ -148,80 +111,26 @@ function ApplicantInterviews() {
     );
   }
 
-  const activeApplicationIds = new Set(
-    interviews
-      .filter((i) => ACTIVE_STATUSES.includes(i.status))
-      .map((i) => i.application_id),
-  );
-  const eligible = applications.filter((a) => !activeApplicationIds.has(a.id));
-
   return (
     <div className="page interview-page">
       <h1 className="page-title">My Interviews</h1>
       {error && <p className="form-error">{error}</p>}
 
-      {eligible.length > 0 ? (
-        <section className="card request-card">
-          <h2>Request an Interview</h2>
-          <p className="muted">
-            Applied for a role? Pick it below and choose a time that suits you.
-            The team will confirm your availability.
-          </p>
-          <form className="request-form" onSubmit={requestInterview}>
-            <select
-              className="field"
-              value={selectedApp}
-              onChange={(e) => setSelectedApp(e.target.value)}
-            >
-              <option value="">Select an application…</option>
-              {eligible.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.role_title} — {a.status}
-                </option>
-              ))}
-            </select>
-            <input
-              className="field"
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-            />
-            <button className="apply-btn" type="submit" disabled={submitting}>
-              <Send size={16} />
-              {submitting ? "Requesting..." : "Request Interview"}
-            </button>
-          </form>
-        </section>
-      ) : (
-        <section className="card request-card">
-          <h2>Request an Interview</h2>
-          <p className="muted">
-            Pick a role you applied for, choose a time that suits you, and the
-            team will confirm your availability.
-          </p>
-          <div className="request-empty">
-            {applications.length === 0 ? (
-              <p>
-                You haven't applied to a role yet.{" "}
-                <Link to="/applicant">Go to My Application</Link> to apply, then
-                request an interview here.
-              </p>
-            ) : (
-              <p>
-                You already have an active interview request for every
-                application. Check the list below for updates.
-              </p>
-            )}
-          </div>
-        </section>
-      )}
+      <section className="card request-card">
+        <h2>Interviews are scheduled by the team</h2>
+        <p className="muted">
+          When a recruiter schedules an interview with you, it will appear below
+          with the time and interviewer. Keep an eye on your notifications and
+          inbox.
+        </p>
+      </section>
 
       <section className="card table-card">
         {interviews.length === 0 ? (
           <EmptyState
             icon={CalendarClock}
             title="No interviews yet"
-            text="Once you apply for a role, you can request an interview here."
+            text="Interviews are scheduled by the team. When one is set up for you, it will appear here."
           />
         ) : (
           <table className="applicants-table">
@@ -283,18 +192,24 @@ function AdminInterviews() {
   const handleUnauthorized = useUnauthorized(navigate);
   const [interviews, setInterviews] = useState([]);
   const [interviewers, setInterviewers] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(null);
+  const [selectedApp, setSelectedApp] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const [ints, ivs] = await Promise.all([
+      const [ints, ivs, apps] = await Promise.all([
         api("/interviews"),
         api("/interviews/interviewers"),
+        api("/applications"),
       ]);
       setInterviews(ints);
       setInterviewers(ivs);
+      setApplications(apps);
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
@@ -305,6 +220,32 @@ function AdminInterviews() {
   useEffect(() => {
     Promise.resolve().then(load);
   }, [load]);
+
+  const scheduleInterview = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!selectedApp || !scheduledAt) {
+      setError("Pick an application and a date & time");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api("/interviews", {
+        method: "POST",
+        body: {
+          application_id: Number(selectedApp),
+          scheduled_at: new Date(scheduledAt).toISOString(),
+        },
+      });
+      setSelectedApp("");
+      setScheduledAt("");
+      await load();
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const setStatus = async (id, status) => {
     setBusy(`${id}-${status}`);
@@ -351,12 +292,45 @@ function AdminInterviews() {
     <div className="page interview-page">
       <h1 className="page-title">Interviews</h1>
       {error && <p className="form-error">{error}</p>}
+
+      <section className="card request-card">
+        <h2>Schedule an Interview</h2>
+        <p className="muted">
+          Pick an applicant&apos;s application and choose a time. The applicant
+          is notified right away.
+        </p>
+        <form className="request-form" onSubmit={scheduleInterview}>
+          <select
+            className="field"
+            value={selectedApp}
+            onChange={(e) => setSelectedApp(e.target.value)}
+          >
+            <option value="">Select an application…</option>
+            {applications.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.applicant_name} — {a.role_title} ({a.status})
+              </option>
+            ))}
+          </select>
+          <input
+            className="field"
+            type="datetime-local"
+            value={scheduledAt}
+            onChange={(e) => setScheduledAt(e.target.value)}
+          />
+          <button className="apply-btn" type="submit" disabled={submitting}>
+            <CalendarPlus size={16} />
+            {submitting ? "Scheduling..." : "Schedule Interview"}
+          </button>
+        </form>
+      </section>
+
       <div className="card table-card">
         {interviews.length === 0 ? (
           <EmptyState
             icon={CalendarClock}
-            title="No interview requests yet"
-            text="When applicants request an interview, it will appear here."
+            title="No interviews yet"
+            text="Use the form above to schedule the first interview."
           />
         ) : (
           <table className="applicants-table">

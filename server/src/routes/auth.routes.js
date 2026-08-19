@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { and, eq } from "drizzle-orm";
+import { rm } from "node:fs/promises";
 import { db } from "../db.js";
 import {
   users,
@@ -9,6 +10,7 @@ import {
   authTokens,
 } from "../db/schema.js";
 import { verifyAuth } from "../middleware/auth.middleware.js";
+import { uploadAvatar, toUploadUrl, storedFilePath } from "../utils/upload.js";
 import {
   TOKEN_ISSUER,
   TOKEN_AUDIENCE,
@@ -277,6 +279,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
         experience: users.experience,
         skills: users.skills,
         cover_letter: users.cover_letter,
+        avatar_url: users.avatar_url,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -309,6 +312,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
             role: "intern",
             full_name: user.full_name,
             deactivated: false,
+            avatar_url: user.avatar_url,
             biodata: {
               phone: user.phone,
               location: user.location,
@@ -329,6 +333,7 @@ authRouter.get("/me", verifyAuth, async (req, res, next) => {
         role: freshRole,
         full_name: user.full_name,
         deactivated: compare(Number(user.is_deactivated), 1),
+        avatar_url: user.avatar_url,
         biodata: {
           phone: user.phone,
           location: user.location,
@@ -529,6 +534,48 @@ authRouter.patch("/account/profile", verifyAuth, async (req, res, next) => {
     next(err);
   }
 });
+
+// POST /api/auth/account/avatar — upload (or replace) the profile picture.
+// Multipart field "avatar"; only PNG/JPG, max 5 MB. The old file is removed
+// from disk after the swap so uploads never pile up.
+authRouter.post(
+  "/account/avatar",
+  verifyAuth,
+  uploadAvatar.single("avatar"),
+  async (req, res, next) => {
+    try {
+      const userId = Number(req.user.sub);
+      if (!req.file) {
+        return res.status(400).json({ error: "An image file is required" });
+      }
+      const avatarUrl = toUploadUrl(req.file);
+      const user = await db
+        .select({ avatar_url: users.avatar_url })
+        .from(users)
+        .where(eq(users.id, userId))
+        .get();
+      if (!user) {
+        return res.status(401).json({ error: "Account doesn't exist" });
+      }
+      const previous = storedFilePath(user.avatar_url);
+      await db
+        .update(users)
+        .set({ avatar_url: avatarUrl })
+        .where(eq(users.id, userId))
+        .run();
+      if (previous) {
+        try {
+          await rm(previous);
+        } catch {
+          // old file already gone — not worth failing the upload over it
+        }
+      }
+      res.json({ data: { avatar_url: avatarUrl } });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 // Soft-delete the signed-in account. Only deactivated accounts can be
 // deleted — deleting is what really removes the account (sets is_deleted = 1).

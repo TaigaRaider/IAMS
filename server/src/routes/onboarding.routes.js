@@ -9,13 +9,44 @@ const onboardingRouter = Router();
 
 // The default checklist every intern starts with. The API merges this with
 // the rows actually stored per user, so new steps appear without a migration
-// and stale rows never leak into the list.
+// and stale rows never leak into the list. `href` points the intern at the
+// page where the step gets done (null = no page yet); `guide` explains how.
 export const DEFAULT_ONBOARDING_STEPS = [
-  { key: "submit_documents", label: "Submit required documents" },
-  { key: "complete_forms", label: "Complete onboarding forms" },
-  { key: "work_email", label: "Set up work email & accounts" },
-  { key: "handbook", label: "Review employee handbook" },
-  { key: "meet_team", label: "Meet your team & mentor" },
+  {
+    key: "submit_documents",
+    label: "Submit required documents",
+    href: "/profile",
+    guide:
+      "Upload or update your CV and any requested documents (ID, certificates) in your Profile. If you can't scan them yet, email them to hr@iams.dev and HR will mark this done for you.",
+  },
+  {
+    key: "complete_forms",
+    label: "Complete onboarding forms",
+    href: "/profile",
+    guide:
+      "Fill out every field in your Profile (contact details, education, experience, skills) — it doubles as your onboarding paperwork. Double-check everything before saving.",
+  },
+  {
+    key: "work_email",
+    label: "Set up work email & accounts",
+    href: null,
+    guide:
+      "Your @iams.dev account invite and the IT setup guide are sent to your personal email after you're hired. If you haven't received them within 48 hours, reach out to HR from the Contacts card.",
+  },
+  {
+    key: "handbook",
+    label: "Review employee handbook",
+    href: null,
+    guide:
+      "The employee handbook is attached to your welcome email. It covers policies, leave, conduct, and expectations — skim it, then ask HR anything that's unclear.",
+  },
+  {
+    key: "meet_team",
+    label: "Meet your team & mentor",
+    href: null,
+    guide:
+      "Your mentor will reach out to schedule the intro session — keep an eye on notifications and your inbox. You can also email your mentor directly from the Contacts card.",
+  },
 ];
 
 function mergeWithDefaults(rows) {
@@ -27,6 +58,8 @@ function mergeWithDefaults(rows) {
       label: row?.label ?? step.label,
       done: row ? Boolean(row.done) : false,
       updated_at: row?.updated_at ?? null,
+      href: step.href ?? null,
+      guide: step.guide ?? "",
     };
   });
 }

@@ -24,6 +24,8 @@ const ALLOWED_EXTENSIONS = new Set([
   ".jpeg",
 ]);
 
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg"]);
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
   filename: (_req, file, cb) => {
@@ -35,7 +37,7 @@ const storage = multer.diskStorage({
 function fileFilter(_req, file, cb) {
   const ext = extname(file.originalname).toLowerCase();
   if (ALLOWED_EXTENSIONS.has(ext)) return cb(null, true);
-  cb(new Error("Unsupported file type — use PDF, Word, TXT or an image"));
+  cb(Object.assign(new Error("Unsupported file type — use PDF, Word, TXT or an image"), { status: 400 }));
 }
 
 // Multer errors arrive through the error middleware; the JSON error handler in
@@ -52,6 +54,17 @@ export const uploadTextFile = multer({
   storage: memoryStorage(),
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter,
+});
+
+// Profile pictures — images only.
+export const uploadAvatar = multer({
+  storage,
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter: (_req, file, cb) => {
+    const ext = extname(file.originalname).toLowerCase();
+    if (IMAGE_EXTENSIONS.has(ext)) return cb(null, true);
+    cb(Object.assign(new Error("Unsupported image type — use PNG or JPG"), { status: 400 }));
+  },
 });
 
 // DB stores a URL path (/api/uploads/<uuid>.ext), not a filesystem path.

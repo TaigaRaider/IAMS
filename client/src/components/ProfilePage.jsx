@@ -26,6 +26,9 @@ function ProfilePage() {
   const [editName, setEditName] = useState("");
   const [editSuccess, setEditSuccess] = useState(false);
 
+  // Avatar upload state
+  const [avatarBusy, setAvatarBusy] = useState(false);
+
   // Change password state
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [pwBusy, setPwBusy] = useState(false);
@@ -79,6 +82,27 @@ function ProfilePage() {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setAvatarBusy(true);
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("avatar", file);
+      const updated = await api("/auth/account/avatar", {
+        method: "POST",
+        body: form,
+      });
+      setProfile((prev) => ({ ...prev, avatar_url: updated.avatar_url }));
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setAvatarBusy(false);
     }
   };
 
@@ -172,10 +196,28 @@ function ProfilePage() {
         <div className="cute-profile-content">
           <div className="cute-avatar-wrapper" style={{ position: "relative" }}>
             <div className="cute-avatar">
-              <Smile size={42} strokeWidth={2.5} />
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt="Profile picture"
+                  className="cute-avatar-img"
+                />
+              ) : (
+                <Smile size={42} strokeWidth={2.5} />
+              )}
             </div>
-            <label className="upload-avatar-btn" title="Upload new picture">
-              <input type="file" accept="image/*" style={{ display: "none" }} />
+            <label
+              className="upload-avatar-btn"
+              title="Upload new picture"
+              style={{ pointerEvents: avatarBusy ? "none" : "auto", opacity: avatarBusy ? 0.6 : 1 }}
+            >
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                style={{ display: "none" }}
+                onChange={handleAvatarUpload}
+                disabled={avatarBusy}
+              />
               <div className="upload-icon-wrapper">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
