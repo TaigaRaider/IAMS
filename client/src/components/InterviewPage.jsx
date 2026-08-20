@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   CalendarClock,
   CalendarCheck,
   CalendarPlus,
   CalendarX,
   CheckCircle2,
-  Send,
   UserRound,
 } from "lucide-react";
 import { api, getSession, logout } from "../api";
@@ -84,19 +83,10 @@ function ApplicantInterviews() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(null);
   const [error, setError] = useState("");
-  const [applications, setApplications] = useState([]);
-  const [selectedApp, setSelectedApp] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
 
   const load = useCallback(async () => {
     try {
-      // Fetch both interviews AND applications
-      const [fetchedInterviews, fetchedApplications] = await Promise.all([
-        api("/interviews"),
-        api("/applications"),
-      ]);
-      setInterviews(fetchedInterviews);
-      setApplications(fetchedApplications);
+      setInterviews(await api("/interviews"));
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
@@ -106,10 +96,6 @@ function ApplicantInterviews() {
   useEffect(() => {
     Promise.resolve().then(load);
   }, [load]);
-  const requestInterview = async (e) => {
-    e.preventDefault();
-    // Add your API logic here to submit the interview request
-  };
   const cancelInterview = async (id) => {
     setCancelling(id);
     setError("");
@@ -139,7 +125,6 @@ function ApplicantInterviews() {
       </div>
     );
   }
-  const eligible = applications.filter((app) => app.status !== "Rejected");
   return (
     <div className="page interview-page">
       <h1 className="page-title">My Interviews</h1>

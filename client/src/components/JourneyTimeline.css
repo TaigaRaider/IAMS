@@ -60,7 +60,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
 .journey-step.done .journey-dot {
@@ -110,7 +113,7 @@
   text-align: center;
 }
 
-@keyframes journey-pulse {
+@keyframes journey-pulse{
   0%,
   100% {
     box-shadow: 0 0 0 4px var(--primary-soft);

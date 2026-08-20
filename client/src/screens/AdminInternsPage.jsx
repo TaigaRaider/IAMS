@@ -38,7 +38,6 @@ function AdminInternsPage() {
   const [error, setError] = useState("");
   const [promoting, setPromoting] = useState(null);
   const [selectedIntern, setSelectedIntern] = useState(null);
-  const [onboarding, setOnboarding] = useState([]);
   const [onboarding, setOnboarding] = useState(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
 
@@ -97,6 +96,8 @@ function AdminInternsPage() {
   const offerCountFor = (internId) =>
     offers.filter((o) => Number(o.applicant_id) === Number(internId)).length;
 
+  const openIntern = (intern) => setSelectedIntern(intern);
+
   useEffect(() => {
     if (!selectedIntern) return;
     let cancelled = false;
@@ -112,30 +113,6 @@ function AdminInternsPage() {
       cancelled = true;
     };
   }, [selectedIntern, handleUnauthorized]);
-
-  const toggleOnboardingStep = async (step) => {
-    setOnboardingBusy(true);
-    setError("");
-    try {
-      await api(`/onboarding/${step.step_key}`, {
-        method: "PATCH",
-        body: { done: !step.done, user_id: selectedIntern.id },
-      });
-      setOnboarding((prev) =>
-        prev.map((s) =>
-          s.step_key === step.step_key ? { ...s, done: !s.done } : s,
-        ),
-      );
-  const loadOnboarding = async (intern) => {
-    setOnboarding(null);
-    setOnboardingBusy(false);
-    try {
-      const data = await api(`/onboarding?user_id=${intern.id}`);
-      setOnboarding(data);
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-    }
-  };
 
   const toggleOnboardingStep = async (step) => {
     if (!selectedIntern || onboardingBusy) return;
@@ -167,7 +144,11 @@ function AdminInternsPage() {
     <div className="page">
       <h1 className="page-title">Interns</h1>
       <div className="page-title-row">
-        <ExportButton path="/export/interns.csv" filename="interns.csv" label="Export CSV" />
+        <ExportButton
+          path="/export/interns.csv"
+          filename="interns.csv"
+          label="Export CSV"
+        />
       </div>
       {error && <p className="form-error">{error}</p>}
       {interns.length === 0 ? (
@@ -353,33 +334,6 @@ function AdminInternsPage() {
                     <span>{selectedIntern.nationality}</span>
                   </div>
                 )}
-                <div className="profile-detail-row onboarding-row">
-                  <span>
-                    <ListTodo size={14} /> Onboarding Steps
-                  </span>
-                  <ul className="onboarding-admin-list">
-                    {onboarding.map((step) => (
-                      <li key={step.step_key} className={step.done ? "done" : ""}>
-                        <button
-                          className="onboarding-toggle"
-                          onClick={() => toggleOnboardingStep(step)}
-                          disabled={onboardingBusy}
-                          aria-label={`Mark ${step.label} ${step.done ? "incomplete" : "complete"}`}
-                        >
-                          {step.done ? <Check size={14} /> : <Circle size={14} />}
-                        </button>
-                        <div className="onboarding-step-info">
-                          <span>{step.label}</span>
-                          {step.guide && (
-                            <small className="onboarding-step-guide">
-                              {step.guide}
-                            </small>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
               </div>
 
               <div className="onboarding-admin-section">
@@ -401,7 +355,11 @@ function AdminInternsPage() {
                           disabled={onboardingBusy}
                           aria-label={`Mark ${step.label} ${step.done ? "incomplete" : "complete"}`}
                         >
-                          {step.done ? <Check size={14} /> : <Circle size={14} />}
+                          {step.done ? (
+                            <Check size={14} />
+                          ) : (
+                            <Circle size={14} />
+                          )}
                         </button>
                         <div className="onboarding-step-info">
                           <span>{step.label}</span>
