@@ -104,7 +104,7 @@ function AdminInternsPage() {
     (async () => {
       try {
         const data = await api(`/onboarding?user_id=${selectedIntern.id}`);
-        if (!cancelled) setOnboarding(data.steps ?? []);
+        if (!cancelled) setOnboarding(data);
       } catch (err) {
         if (!cancelled && !handleUnauthorized(err)) setError(err.message);
       }

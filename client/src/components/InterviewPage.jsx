@@ -478,4 +478,4 @@ export default function InterviewPage() {
   ) : (
     <ApplicantInterviews />
   );
-}
+ }
