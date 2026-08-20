@@ -1,0 +1,22 @@
+.forms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px 18px;
+  margin-top: 16px;
+}
+
+.forms-grid .cute-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.forms-grid .cute-form-group:nth-child(5),
+.forms-grid .cute-form-group:nth-child(6) {
+  grid-column: 1 / -1;
+}
+
+.forms-grid .cute-form-actions {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}

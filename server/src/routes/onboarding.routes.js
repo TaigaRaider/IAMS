@@ -15,16 +15,16 @@ export const DEFAULT_ONBOARDING_STEPS = [
   {
     key: "submit_documents",
     label: "Submit required documents",
-    href: "/profile",
+    href: "/intern/documents",
     guide:
-      "Upload or update your CV and any requested documents (ID, certificates) in your Profile. If you can't scan them yet, email them to hr@iams.dev and HR will mark this done for you.",
+      "Upload your CV and any requested documents (ID, certificates) on the Documents page. If you can't scan them yet, email them to hr@iams.dev and HR will mark this done for you.",
   },
   {
     key: "complete_forms",
     label: "Complete onboarding forms",
-    href: "/profile",
+    href: "/intern/forms",
     guide:
-      "Fill out every field in your Profile (contact details, education, experience, skills) — it doubles as your onboarding paperwork. Double-check everything before saving.",
+      "Fill out every field of the Onboarding Forms page (contact details, education, experience, skills) — it doubles as your onboarding paperwork. Double-check everything before saving.",
   },
   {
     key: "work_email",
