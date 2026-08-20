@@ -1,7 +1,7 @@
 const BASE = import.meta.env.VITE_API_BASE ?? "/api";
 const SESSION_KEY = "iams_session";
 const MAX_RETRIES = 2;
-const FETCH_TIMEOUT_MS = 15_000;
+const FETCH_TIMEOUT_MS = 10_000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

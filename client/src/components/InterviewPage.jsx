@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   CalendarClock,
   CalendarCheck,
   CalendarPlus,
   CalendarX,
   CheckCircle2,
+  Send,
   UserRound,
 } from "lucide-react";
 import { api, getSession, logout } from "../api";
@@ -83,21 +84,32 @@ function ApplicantInterviews() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(null);
   const [error, setError] = useState("");
+  const [applications, setApplications] = useState([]);
+  const [selectedApp, setSelectedApp] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
 
   const load = useCallback(async () => {
     try {
-      setInterviews(await api("/interviews"));
+      // Fetch both interviews AND applications
+      const [fetchedInterviews, fetchedApplications] = await Promise.all([
+        api("/interviews"),
+        api("/applications"),
+      ]);
+      setInterviews(fetchedInterviews);
+      setApplications(fetchedApplications);
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
       setLoading(false);
     }
   }, [handleUnauthorized]);
-
   useEffect(() => {
     Promise.resolve().then(load);
   }, [load]);
-
+  const requestInterview = async (e) => {
+    e.preventDefault();
+    // Add your API logic here to submit the interview request
+  };
   const cancelInterview = async (id) => {
     setCancelling(id);
     setError("");
@@ -119,15 +131,15 @@ function ApplicantInterviews() {
       <div className="page interview-page">
         <Skeleton width="220px" height="28px" />
         <div className="card table-card skeleton-block">
-          <Skeleton width="100%" height="16px" />
-          <Skeleton width="100%" height="16px" />
-          <Skeleton width="100%" height="16px" />
-          <Skeleton width="70%" height="16px" />
+          <Skeleton width="100%" height="20px" />
+          <Skeleton width="100%" height="20px" />
+          <Skeleton width="100%" height="20px" />
+          <Skeleton width="70%" height="20px" />
         </div>
       </div>
     );
   }
-
+  const eligible = applications.filter((app) => app.status !== "Rejected");
   return (
     <div className="page interview-page">
       <h1 className="page-title">My Interviews</h1>
@@ -135,11 +147,11 @@ function ApplicantInterviews() {
       {eligible.length > 0 ? (
         <section className="card request-card">
           <h2>Interviews are scheduled by the team</h2>
-        <p className="muted">
-          When a recruiter schedules an interview with you, it will appear below
-          with the time and interviewer. Keep an eye on your notifications and
-          inbox.
-        </p>
+          <p className="muted">
+            When a recruiter schedules an interview with you, it will appear
+            below with the time and interviewer. Keep an eye on your
+            notifications and inbox.
+          </p>
           <h2>Request an Interview</h2>
           <p className="muted">
             Applied for a role? Pick it below and choose a time that suits you.
@@ -162,9 +174,9 @@ function ApplicantInterviews() {
               value={scheduledAt}
               onChange={(e) => setScheduledAt(e.target.value)}
             />
-            <button className="apply-btn" type="submit" disabled={submitting}>
+            <button className="apply-btn" type="submit">
               <Send size={16} />
-              {submitting ? "Requesting..." : "Request Interview"}
+              Request Interview
             </button>
           </form>
         </section>
@@ -471,16 +483,16 @@ function AdminInterviews() {
                     </td>
                     <td>
                       <Select
-                      value={i.interviewer_id ?? ""}
-                      disabled={busy === `${i.id}-iv`}
-                      onChange={(v) => assignInterviewer(i.id, v)}
-                      placeholder="Unassigned"
-                      menuAlign="right"
-                      options={interviewers.map((u) => ({
-                        value: u.id,
-                        label: u.full_name,
-                      }))}
-                    />
+                        value={i.interviewer_id ?? ""}
+                        disabled={busy === `${i.id}-iv`}
+                        onChange={(v) => assignInterviewer(i.id, v)}
+                        placeholder="Unassigned"
+                        menuAlign="right"
+                        options={interviewers.map((u) => ({
+                          value: u.id,
+                          label: u.full_name,
+                        }))}
+                      />
                     </td>
                     <td>
                       <div className="action-btns">
@@ -527,5 +539,9 @@ function AdminInterviews() {
 
 export default function InterviewPage() {
   const session = getSession();
-  return compare(session?.role, "admin") ? <AdminInterviews /> : <ApplicantInterviews />;
+  return compare(session?.role, "admin") ? (
+    <AdminInterviews />
+  ) : (
+    <ApplicantInterviews />
+  );
 }

@@ -58,10 +58,13 @@ export function TableSkeleton({ rows = 5 }) {
       </div>
       {Array.from({ length: rows }).map((_, i) => (
         <div className="skeleton-table-row" key={i}>
-          <Skeleton width="150px" height="14px" />
-          <Skeleton width="190px" height="14px" />
-          <Skeleton width="120px" height="14px" />
-          <Skeleton width="90px" height="14px" />
+          <div className="skeleton-table-id">
+            <Skeleton circle width="36px" height="36px" />
+            <Skeleton width="90px" height="18px" />
+          </div>
+          <Skeleton width="150px" height="18px" />
+          <Skeleton width="110px" height="18px" />
+          <Skeleton width="80px" height="18px" />
         </div>
       ))}
     </div>

@@ -12,6 +12,8 @@ import {
   CalendarDays,
   FileText,
   Globe,
+  Check,
+  Circle,
 } from "lucide-react";
 import { api, logout } from "../api";
 import ExportButton from "../components/ExportButton.jsx";
@@ -36,6 +38,8 @@ function AdminInternsPage() {
   const [error, setError] = useState("");
   const [promoting, setPromoting] = useState(null);
   const [selectedIntern, setSelectedIntern] = useState(null);
+  const [onboarding, setOnboarding] = useState([]);
+  const [onboardingBusy, setOnboardingBusy] = useState(false);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -91,6 +95,42 @@ function AdminInternsPage() {
 
   const offerCountFor = (internId) =>
     offers.filter((o) => Number(o.applicant_id) === Number(internId)).length;
+
+  useEffect(() => {
+    if (!selectedIntern) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api(`/onboarding?user_id=${selectedIntern.id}`);
+        if (!cancelled) setOnboarding(data.steps ?? []);
+      } catch (err) {
+        if (!cancelled && !handleUnauthorized(err)) setError(err.message);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedIntern, handleUnauthorized]);
+
+  const toggleOnboardingStep = async (step) => {
+    setOnboardingBusy(true);
+    setError("");
+    try {
+      await api(`/onboarding/${step.step_key}`, {
+        method: "PATCH",
+        body: { done: !step.done, user_id: selectedIntern.id },
+      });
+      setOnboarding((prev) =>
+        prev.map((s) =>
+          s.step_key === step.step_key ? { ...s, done: !s.done } : s,
+        ),
+      );
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    } finally {
+      setOnboardingBusy(false);
+    }
+  };
 
   return (
     <div className="page">
@@ -279,34 +319,36 @@ function AdminInternsPage() {
                     <span>
                       <Globe size={14} /> Nationality
                     </span>
-                    <ul className="onboarding-admin-list">
-                      {onboarding.steps.map((step) => (
-                        <li
-                          key={step.step_key}
-                          className={step.done ? "done" : ""}
-                        >
-                          <button
-                            className="onboarding-toggle"
-                            onClick={() => toggleOnboardingStep(step)}
-                            disabled={onboardingBusy}
-                            aria-label={`Mark ${step.label} ${step.done ? "incomplete" : "complete"}`}
-                          >
-                            {step.done ? <Check size={14} /> : <Circle size={14} />}
-                          </button>
-                          <div className="onboarding-step-info">
-                            <span>{step.label}</span>
-                            {step.guide && (
-                              <small className="onboarding-step-guide">
-                                {step.guide}
-                              </small>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
                     <span>{selectedIntern.nationality}</span>
                   </div>
                 )}
+                <div className="profile-detail-row onboarding-row">
+                  <span>
+                    <ListTodo size={14} /> Onboarding Steps
+                  </span>
+                  <ul className="onboarding-admin-list">
+                    {onboarding.map((step) => (
+                      <li key={step.step_key} className={step.done ? "done" : ""}>
+                        <button
+                          className="onboarding-toggle"
+                          onClick={() => toggleOnboardingStep(step)}
+                          disabled={onboardingBusy}
+                          aria-label={`Mark ${step.label} ${step.done ? "incomplete" : "complete"}`}
+                        >
+                          {step.done ? <Check size={14} /> : <Circle size={14} />}
+                        </button>
+                        <div className="onboarding-step-info">
+                          <span>{step.label}</span>
+                          {step.guide && (
+                            <small className="onboarding-step-guide">
+                              {step.guide}
+                            </small>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
 
               <div className="profile-modal-actions">
