@@ -19,6 +19,7 @@ import { notificationRouter } from "./routes/notifications.routes.js";
 import { onboardingRouter } from "./routes/onboarding.routes.js";
 import { textFilesRouter } from "./routes/textfiles.routes.js";
 import { exportRouter } from "./routes/export.routes.js";
+import { documentRouter } from "./routes/documents.routes.js";
 import { UPLOADS_DIR, UPLOADS_URL } from "./utils/upload.js";
 
 config();
@@ -166,6 +167,7 @@ app.use("/api/applications", applicationRouter);
 app.use("/api", internRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/onboarding", onboardingRouter);
+app.use("/api/interns/documents", documentRouter);
 app.use("/api/text-files", textFilesRouter);
 app.use("/api/export", exportRouter);
 

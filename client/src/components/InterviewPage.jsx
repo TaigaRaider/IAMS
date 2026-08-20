@@ -144,65 +144,14 @@ function ApplicantInterviews() {
     <div className="page interview-page">
       <h1 className="page-title">My Interviews</h1>
       {error && <p className="form-error">{error}</p>}
-      {eligible.length > 0 ? (
-        <section className="card request-card">
-          <h2>Interviews are scheduled by the team</h2>
-          <p className="muted">
-            When a recruiter schedules an interview with you, it will appear
-            below with the time and interviewer. Keep an eye on your
-            notifications and inbox.
-          </p>
-          <h2>Request an Interview</h2>
-          <p className="muted">
-            Applied for a role? Pick it below and choose a time that suits you.
-            The team will confirm your availability.
-          </p>
-          <form className="request-form" onSubmit={requestInterview}>
-            <Select
-              className="field"
-              value={selectedApp}
-              onChange={setSelectedApp}
-              placeholder="Select an application…"
-              options={eligible.map((a) => ({
-                value: a.id,
-                label: `${a.role_title} — ${a.status}`,
-              }))}
-            />
-            <input
-              className="field"
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-            />
-            <button className="apply-btn" type="submit">
-              <Send size={16} />
-              Request Interview
-            </button>
-          </form>
-        </section>
-      ) : (
-        <section className="card request-card">
-          <h2>Request an Interview</h2>
-          <p className="muted">
-            Pick a role you applied for, choose a time that suits you, and the
-            team will confirm your availability.
-          </p>
-          <div className="request-empty">
-            {applications.length === 0 ? (
-              <p>
-                You haven't applied to a role yet.{" "}
-                <Link to="/applicant">Go to My Application</Link> to apply, then
-                request an interview here.
-              </p>
-            ) : (
-              <p>
-                You already have an active interview request for every
-                application. Check the list below for updates.
-              </p>
-            )}
-          </div>
-        </section>
-      )}
+      <section className="card request-card">
+        <h2>Interviews are scheduled by the team</h2>
+        <p className="muted">
+          When a recruiter schedules an interview with you, it will appear below
+          with the time, venue and interviewer. Keep an eye on your
+          notifications and inbox.
+        </p>
+      </section>
 
       <section className="card table-card">
         {interviews.length === 0 ? (

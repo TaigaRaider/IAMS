@@ -39,6 +39,7 @@ function AdminInternsPage() {
   const [promoting, setPromoting] = useState(null);
   const [selectedIntern, setSelectedIntern] = useState(null);
   const [onboarding, setOnboarding] = useState([]);
+  const [onboarding, setOnboarding] = useState(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
 
   const handleUnauthorized = useCallback(
@@ -125,6 +126,36 @@ function AdminInternsPage() {
           s.step_key === step.step_key ? { ...s, done: !s.done } : s,
         ),
       );
+  const loadOnboarding = async (intern) => {
+    setOnboarding(null);
+    setOnboardingBusy(false);
+    try {
+      const data = await api(`/onboarding?user_id=${intern.id}`);
+      setOnboarding(data);
+    } catch (err) {
+      if (!handleUnauthorized(err)) setError(err.message);
+    }
+  };
+
+  const toggleOnboardingStep = async (step) => {
+    if (!selectedIntern || onboardingBusy) return;
+    setOnboardingBusy(true);
+    try {
+      const data = await api(`/onboarding/${step.step_key}`, {
+        method: "PATCH",
+        body: { done: !step.done, user_id: selectedIntern.id },
+      });
+      setOnboarding((prev) => ({
+        ...prev,
+        steps: prev.steps.map((s) =>
+          s.step_key === data.step_key ? { ...s, done: data.done } : s,
+        ),
+        done: prev.done + (data.done ? 1 : -1),
+        progress: Math.round(
+          ((prev.done + (data.done ? 1 : -1)) / prev.total) * 100,
+        ),
+      }));
+      await load();
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {
@@ -166,7 +197,7 @@ function AdminInternsPage() {
                     <td>
                       <button
                         className="applicant-cell applicant-link"
-                        onClick={() => setSelectedIntern(intern)}
+                        onClick={() => openIntern(intern)}
                         title="View profile"
                       >
                         <div className="avatar-mini">
@@ -349,6 +380,41 @@ function AdminInternsPage() {
                     ))}
                   </ul>
                 </div>
+              </div>
+
+              <div className="onboarding-admin-section">
+                <h4 className="onboarding-admin-title">
+                  <ListTodo size={14} /> Onboarding Checklist
+                </h4>
+                {!onboarding ? (
+                  <p className="muted">Loading…</p>
+                ) : (
+                  <ul className="onboarding-admin-list">
+                    {onboarding.steps.map((step) => (
+                      <li
+                        key={step.step_key}
+                        className={step.done ? "done" : ""}
+                      >
+                        <button
+                          className="onboarding-toggle"
+                          onClick={() => toggleOnboardingStep(step)}
+                          disabled={onboardingBusy}
+                          aria-label={`Mark ${step.label} ${step.done ? "incomplete" : "complete"}`}
+                        >
+                          {step.done ? <Check size={14} /> : <Circle size={14} />}
+                        </button>
+                        <div className="onboarding-step-info">
+                          <span>{step.label}</span>
+                          {step.guide && (
+                            <small className="onboarding-step-guide">
+                              {step.guide}
+                            </small>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               <div className="profile-modal-actions">

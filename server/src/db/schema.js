@@ -259,6 +259,34 @@ export const onboardingSteps = sqliteTable(
   ],
 );
 
+// Required documents uploaded by interns during onboarding (CV, ID,
+// certificates, or anything else HR asks for). Files live on disk under
+// uploads/; the DB row keeps the metadata + URL.
+export const internDocuments = sqliteTable(
+  "intern_documents",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    user_id: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    doc_type: text("doc_type", {
+      enum: ["cv", "id", "certificate", "other"],
+    })
+      .notNull()
+      .default("other"),
+    file_name: text("file_name").notNull(),
+    stored_path: text("stored_path").notNull(),
+    size_bytes: integer("size_bytes").notNull(),
+    uploaded_at: text("uploaded_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [
+    index("intern_documents_user_idx").on(t.user_id),
+    index("intern_documents_type_idx").on(t.user_id, t.doc_type),
+  ],
+);
+
 // Text-packet file transport: a file is stored as a set of uniform text
 // packets (Reed-Solomon data + parity fragments, ~512 base64 chars each) so
 // any `m` of `n` packets per block are enough to reconstruct the file.

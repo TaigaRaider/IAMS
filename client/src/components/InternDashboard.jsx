@@ -18,15 +18,20 @@ CheckCircle2,
   UserRound,
   ChevronRight,
   X,
+  ClipboardCheck,
 } from "lucide-react";
 import { api, logout, getSession } from "../api";
 import { compare } from "../utils/compare";
 import DashboardShell from "./DashboardShell.jsx";
 import SearchResults from "./SearchResults.jsx";
+import InternDocumentsPage from "./InternDocumentsPage.jsx";
+import InternFormsPage from "./InternFormsPage.jsx";
 import "./InternDashboard.css";
 
 const INTERN_NAV = [
   { to: "/intern", end: true, icon: LayoutDashboard, label: "Overview" },
+  { to: "/intern/documents", icon: FileCheck2, label: "Documents" },
+  { to: "/intern/forms", icon: ClipboardCheck, label: "Forms" },
   { to: "/profile", icon: UserRound, label: "Profile" },
 ];
 
@@ -72,16 +77,16 @@ const DEFAULT_ONBOARDING_STEPS = [
   {
     step_key: "submit_documents",
     label: "Submit required documents",
-    href: "/profile",
+    href: "/intern/documents",
     guide:
-      "Upload or update your CV and any requested documents (ID, certificates) in your Profile. If you can't scan them yet, email them to hr@iams.dev and HR will mark this done for you.",
+      "Upload your CV and any requested documents (ID, certificates) on the Documents page. If you can't scan them yet, email them to hr@iams.dev and HR will mark this done for you.",
   },
   {
     step_key: "complete_forms",
     label: "Complete onboarding forms",
-    href: "/profile",
+    href: "/intern/forms",
     guide:
-      "Fill out every field in your Profile (contact details, education, experience, skills) — it doubles as your onboarding paperwork. Double-check everything before saving.",
+      "Fill out every field of the Onboarding Forms page (contact details, education, experience, skills) — it doubles as your onboarding paperwork. Double-check everything before saving.",
   },
   {
     step_key: "work_email",
@@ -537,6 +542,8 @@ function InternDashboard() {
     <DashboardShell navItems={INTERN_NAV}>
       <Routes>
         <Route index element={<InternOverview />} />
+        <Route path="documents" element={<InternDocumentsPage />} />
+        <Route path="forms" element={<InternFormsPage />} />
         <Route path="search" element={<SearchResults />} />
       </Routes>
     </DashboardShell>
