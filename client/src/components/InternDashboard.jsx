@@ -10,7 +10,7 @@ import {
   Users,
   Phone,
   Mail,
-CheckCircle2,
+  CheckCircle2,
   Circle,
   FileCheck2,
   Gift,
@@ -78,36 +78,26 @@ const DEFAULT_ONBOARDING_STEPS = [
     step_key: "submit_documents",
     label: "Submit required documents",
     href: "/intern/documents",
-    guide:
-      "Upload your CV and any requested documents (ID, certificates) on the Documents page. If you can't scan them yet, email them to hr@iams.dev and HR will mark this done for you.",
   },
   {
     step_key: "complete_forms",
     label: "Complete onboarding forms",
     href: "/intern/forms",
-    guide:
-      "Fill out every field of the Onboarding Forms page (contact details, education, experience, skills) — it doubles as your onboarding paperwork. Double-check everything before saving.",
   },
   {
     step_key: "work_email",
     label: "Set up work email & accounts",
     href: null,
-    guide:
-      "Your @iams.dev account invite and the IT setup guide are sent to your personal email after you're hired. If you haven't received them within 48 hours, reach out to HR from the Contacts card.",
   },
   {
     step_key: "handbook",
     label: "Review employee handbook",
     href: null,
-    guide:
-      "The employee handbook is attached to your welcome email. It covers policies, leave, conduct, and expectations — skim it, then ask HR anything that's unclear.",
   },
   {
     step_key: "meet_team",
     label: "Meet your team & mentor",
     href: null,
-    guide:
-      "Your mentor will reach out to schedule the intro session — keep an eye on notifications and your inbox. You can also email your mentor directly from the Contacts card.",
   },
 ];
 
@@ -121,7 +111,9 @@ function InternOverview() {
   const [error, setError] = useState("");
   const [selectedContact, setSelectedContact] = useState(null);
 
-  const [onboardingSteps, setOnboardingSteps] = useState(DEFAULT_ONBOARDING_STEPS);
+  const [onboardingSteps, setOnboardingSteps] = useState(
+    DEFAULT_ONBOARDING_STEPS,
+  );
   const [onboardingLoading, setOnboardingLoading] = useState(true);
   const [openGuide, setOpenGuide] = useState(null);
 
@@ -219,10 +211,10 @@ function InternOverview() {
 
   const hired = applications.find((a) => compare(a.status, "Hired"));
   const offer = hired
-    ? offers.find((o) => o.application_id === hired.id) ?? null
+    ? (offers.find((o) => o.application_id === hired.id) ?? null)
     : null;
   const role = hired
-    ? roles.find((r) => r.id === hired.role_id) ?? null
+    ? (roles.find((r) => r.id === hired.role_id) ?? null)
     : null;
 
   const doneCount = onboardingSteps.filter((s) => s.done).length;
@@ -243,11 +235,20 @@ function InternOverview() {
     },
     {
       label: "Offer accepted",
-      value: offer?.current_revision ? formatDate(offer.current_revision.created_at) : "Congrats!",
+      value: offer?.current_revision
+        ? formatDate(offer.current_revision.created_at)
+        : "Congrats!",
       icon: BadgeCheck,
       done: true,
     },
-    { label: "Internship starts", value: offer?.current_revision?.start_date ? formatDate(offer.current_revision.start_date) : "Soon", icon: CalendarDays, done: false },
+    {
+      label: "Internship starts",
+      value: offer?.current_revision?.start_date
+        ? formatDate(offer.current_revision.start_date)
+        : "Soon",
+      icon: CalendarDays,
+      done: false,
+    },
   ];
 
   return (
@@ -374,29 +375,75 @@ function InternOverview() {
 
         <section className="card">
           <h2>Key Dates</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "16px", marginTop: "16px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
+              gap: "16px",
+              marginTop: "16px",
+            }}
+          >
             {keyDates.map((item) => {
               let month = "TBD";
               let day = "—";
               let year = "";
-              if (item.value && !["—", "Congrats!", "Soon"].includes(item.value)) {
-                 const parts = item.value.split(" ");
-                 if (parts.length >= 2) {
-                   month = parts[0].toUpperCase();
-                   day = parseInt(parts[1], 10);
-                   year = parts[2] || "";
-                 }
+              if (
+                item.value &&
+                !["—", "Congrats!", "Soon"].includes(item.value)
+              ) {
+                const parts = item.value.split(" ");
+                if (parts.length >= 2) {
+                  month = parts[0].toUpperCase();
+                  day = parseInt(parts[1], 10);
+                  year = parts[2] || "";
+                }
               }
               return (
-                <div key={item.label} style={{ border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden", textAlign: "center", background: "var(--card-background)", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                  <div style={{ background: item.done ? "var(--primary, #6366f1)" : "var(--muted, #9ca3af)", color: "white", padding: "6px", fontWeight: "bold", fontSize: "13px", letterSpacing: "1px" }}>
+                <div
+                  key={item.label}
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    textAlign: "center",
+                    background: "var(--card-background)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                  }}
+                >
+                  <div
+                    style={{
+                      background: item.done
+                        ? "var(--primary, #6366f1)"
+                        : "var(--muted, #9ca3af)",
+                      color: "white",
+                      padding: "6px",
+                      fontWeight: "bold",
+                      fontSize: "13px",
+                      letterSpacing: "1px",
+                    }}
+                  >
                     {month} {year}
                   </div>
                   <div style={{ padding: "16px 10px" }}>
-                    <div style={{ fontSize: "32px", fontWeight: "800", lineHeight: 1, marginBottom: "8px", color: "var(--heading)" }}>
+                    <div
+                      style={{
+                        fontSize: "32px",
+                        fontWeight: "800",
+                        lineHeight: 1,
+                        marginBottom: "8px",
+                        color: "var(--heading)",
+                      }}
+                    >
                       {day}
                     </div>
-                    <div style={{ fontSize: "13px", color: "var(--muted)", fontWeight: 500, lineHeight: 1.2 }}>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "var(--muted)",
+                        fontWeight: 500,
+                        lineHeight: 1.2,
+                      }}
+                    >
                       {item.label}
                     </div>
                   </div>
@@ -410,7 +457,8 @@ function InternOverview() {
           <div className="card-head">
             <h2>My Tasks</h2>
             <span className="view-all">
-              {tasks.filter((t) => compare(t.status, "done")).length}/{tasks.length} done
+              {tasks.filter((t) => compare(t.status, "done")).length}/
+              {tasks.length} done
             </span>
           </div>
           {tasks.length === 0 ? (
@@ -418,7 +466,10 @@ function InternOverview() {
           ) : (
             <ul className="checklist">
               {tasks.map((task) => (
-                <li key={task.id} className={compare(task.status, "done") ? "done" : ""}>
+                <li
+                  key={task.id}
+                  className={compare(task.status, "done") ? "done" : ""}
+                >
                   {compare(task.status, "done") ? (
                     <CheckCircle2 className="check-icon done" size={20} />
                   ) : (
@@ -428,7 +479,9 @@ function InternOverview() {
                     <strong>{task.title}</strong>
                     {task.description && <span>{task.description}</span>}
                     {task.due_date && (
-                      <span className="task-due">Due {formatDate(task.due_date)}</span>
+                      <span className="task-due">
+                        Due {formatDate(task.due_date)}
+                      </span>
                     )}
                   </div>
                   {task.status !== "done" && (
@@ -437,7 +490,9 @@ function InternOverview() {
                       onClick={() =>
                         updateTaskStatus(
                           task,
-                          compare(task.status, "pending") ? "in_progress" : "done",
+                          compare(task.status, "pending")
+                            ? "in_progress"
+                            : "done",
                         )
                       }
                     >
@@ -512,18 +567,27 @@ function InternOverview() {
             <p className="contact-modal-note">{selectedContact.note}</p>
 
             <div className="contact-modal-details">
-              <a href={`tel:${selectedContact.phone.replace(/\s/g, "")}`} className="contact-modal-row">
+              <a
+                href={`tel:${selectedContact.phone.replace(/\s/g, "")}`}
+                className="contact-modal-row"
+              >
                 <Phone size={16} />
                 <span>{selectedContact.phone}</span>
               </a>
-              <a href={`mailto:${selectedContact.email}`} className="contact-modal-row">
+              <a
+                href={`mailto:${selectedContact.email}`}
+                className="contact-modal-row"
+              >
                 <Mail size={16} />
                 <span>{selectedContact.email}</span>
               </a>
             </div>
 
             <div className="contact-modal-actions">
-              <a className="btn-ghost" href={`tel:${selectedContact.phone.replace(/\s/g, "")}`}>
+              <a
+                className="btn-ghost"
+                href={`tel:${selectedContact.phone.replace(/\s/g, "")}`}
+              >
                 <Phone size={16} /> Call
               </a>
               <a className="apply-btn" href={`mailto:${selectedContact.email}`}>

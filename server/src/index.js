@@ -58,6 +58,8 @@ if (process.env.TRUST_PROXY) {
 
 const isProd = process.env.NODE_ENV === "production";
 
+const corsOrigin = process.env.CORS_ORIGIN ?? (isProd ? "https://iams-woad.vercel.app" : "http://localhost:5173");
+
 app.use(
   helmet({
     contentSecurityPolicy: isProd
@@ -68,7 +70,7 @@ app.use(
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:"],
             fontSrc: ["'self'", "data:"],
-            connectSrc: ["'self'"],
+            connectSrc: ["'self'", corsOrigin],
             objectSrc: ["'none'"],
             frameAncestors: ["'none'"],
             baseUri: ["'self'"],
@@ -99,7 +101,7 @@ app.use((req, res, next) => {
 });
 app.use(
   cors({
-    origin: `${process.env.ORIGIN}`,
+    origin: corsOrigin,
     credentials: true,
   }),
 );

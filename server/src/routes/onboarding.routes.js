@@ -16,36 +16,26 @@ export const DEFAULT_ONBOARDING_STEPS = [
     key: "submit_documents",
     label: "Submit required documents",
     href: "/intern/documents",
-    guide:
-      "Upload your CV and any requested documents (ID, certificates) on the Documents page. If you can't scan them yet, email them to hr@iams.dev and HR will mark this done for you.",
   },
   {
     key: "complete_forms",
     label: "Complete onboarding forms",
     href: "/intern/forms",
-    guide:
-      "Fill out every field of the Onboarding Forms page (contact details, education, experience, skills) — it doubles as your onboarding paperwork. Double-check everything before saving.",
   },
   {
     key: "work_email",
     label: "Set up work email & accounts",
     href: null,
-    guide:
-      "Your @iams.dev account invite and the IT setup guide are sent to your personal email after you're hired. If you haven't received them within 48 hours, reach out to HR from the Contacts card.",
   },
   {
     key: "handbook",
     label: "Review employee handbook",
     href: null,
-    guide:
-      "The employee handbook is attached to your welcome email. It covers policies, leave, conduct, and expectations — skim it, then ask HR anything that's unclear.",
   },
   {
     key: "meet_team",
     label: "Meet your team & mentor",
     href: null,
-    guide:
-      "Your mentor will reach out to schedule the intro session — keep an eye on notifications and your inbox. You can also email your mentor directly from the Contacts card.",
   },
 ];
 
@@ -73,7 +63,9 @@ onboardingRouter.get("/", verifyAuth, async (req, res, next) => {
       ? Number(req.query.user_id)
       : Number(req.user.sub);
     if (!isAdmin && !compare(targetId, Number(req.user.sub))) {
-      return res.status(403).json({ error: "You can only view your own onboarding" });
+      return res
+        .status(403)
+        .json({ error: "You can only view your own onboarding" });
     }
     const rows = await db
       .select({
@@ -109,7 +101,10 @@ onboardingRouter.patch("/:stepKey", verifyAuth, async (req, res, next) => {
   if (!stepKey) {
     return res.status(400).json({ error: "Step key is required" });
   }
-  if (!["done", "pending"].includes(String(done ?? "").toLowerCase()) && typeof done !== "boolean") {
+  if (
+    !["done", "pending"].includes(String(done ?? "").toLowerCase()) &&
+    typeof done !== "boolean"
+  ) {
     return res.status(400).json({ error: "done must be true or false" });
   }
   const step = DEFAULT_ONBOARDING_STEPS.find((s) => s.key === stepKey);
@@ -121,9 +116,18 @@ onboardingRouter.patch("/:stepKey", verifyAuth, async (req, res, next) => {
     const targetId =
       isAdmin && user_id != null ? Number(user_id) : Number(req.user.sub);
     if (!isAdmin && !compare(targetId, Number(req.user.sub))) {
-      return res.status(403).json({ error: "You can only update your own onboarding" });
+      return res
+        .status(403)
+        .json({ error: "You can only update your own onboarding" });
     }
-    const doneValue = typeof done === "boolean" ? (done ? 1 : 0) : compare(done, "done") ? 1 : 0;
+    const doneValue =
+      typeof done === "boolean"
+        ? done
+          ? 1
+          : 0
+        : compare(done, "done")
+          ? 1
+          : 0;
     const existing = await db
       .select({ id: onboardingSteps.id })
       .from(onboardingSteps)
@@ -143,10 +147,17 @@ onboardingRouter.patch("/:stepKey", verifyAuth, async (req, res, next) => {
     } else {
       await db
         .insert(onboardingSteps)
-        .values({ user_id: targetId, step_key: stepKey, label: step.label, done: doneValue })
+        .values({
+          user_id: targetId,
+          step_key: stepKey,
+          label: step.label,
+          done: doneValue,
+        })
         .run();
     }
-    res.json({ data: { user_id: targetId, step_key: stepKey, done: Boolean(doneValue) } });
+    res.json({
+      data: { user_id: targetId, step_key: stepKey, done: Boolean(doneValue) },
+    });
   } catch (err) {
     next(err);
   }

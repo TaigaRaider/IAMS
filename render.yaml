@@ -16,6 +16,8 @@ services:
         sync: false
       - key: TURSO_AUTH_TOKEN
         sync: false
+      - key: CORS_ORIGIN
+        value: "https://iams-woad.vercel.app"
       - key: MAIL_ENABLED
         value: "false"
       - key: SMTP_HOST
