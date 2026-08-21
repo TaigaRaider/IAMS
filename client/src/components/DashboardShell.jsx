@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { LogOut, Menu } from "lucide-react";
-import { logout } from "../api";
+import { api, logout } from "../api";
 import NotificationBell from "./NotificationBell.jsx";
 import "./DashboardShell.css";
 
@@ -11,6 +11,29 @@ function DashboardShell({ navItems, children }) {
   const [searchParams] = useSearchParams();
   const [collapsed, setCollapsed] = useState(() => window.innerWidth <= 768);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+
+  // The header avatar mirrors the profile picture uploaded on the profile
+  // page: load it once per mount and live-update via the "avatar-updated"
+  // event dispatched after a successful upload.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await api("/auth/me");
+        if (!cancelled) setAvatarUrl(me.avatar_url ?? null);
+      } catch {
+        // Cosmetic only — the placeholder icon is a fine fallback.
+      }
+    })();
+    const onAvatarUpdated = (e) =>
+      setAvatarUrl(e.detail?.avatar_url ?? null);
+    window.addEventListener("avatar-updated", onAvatarUpdated);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("avatar-updated", onAvatarUpdated);
+    };
+  }, []);
 
   const closeOnMobile = () => {
     if (window.innerWidth <= 768) setCollapsed(true);
@@ -63,10 +86,14 @@ function DashboardShell({ navItems, children }) {
         <div className="actions">
           <NotificationBell />
           <Link to="/profile" className="avatar-link" aria-label="Go to profile">
-            <svg className="avatar" viewBox="0 0 64 64" aria-hidden="true">
-              <circle cx="32" cy="24" r="14" fill="#f0e6ff" />
-              <path d="M10 58c4-14 12-18 22-18s18 4 22 18" fill="#f0e6ff" />
-            </svg>
+            {avatarUrl ? (
+              <img className="avatar" src={avatarUrl} alt="Your profile" />
+            ) : (
+              <svg className="avatar" viewBox="0 0 64 64" aria-hidden="true">
+                <circle cx="32" cy="24" r="14" fill="#f0e6ff" />
+                <path d="M10 58c4-14 12-18 22-18s18 4 22 18" fill="#f0e6ff" />
+              </svg>
+            )}
           </Link>
         </div>
       </header>

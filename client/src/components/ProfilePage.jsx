@@ -106,6 +106,13 @@ function ProfilePage() {
         body: form,
       });
       setProfile((prev) => ({ ...prev, avatar_url: updated.avatar_url }));
+      // Let the dashboard header (and anything else listening) pick up the
+      // new picture without a full reload.
+      window.dispatchEvent(
+        new CustomEvent("avatar-updated", {
+          detail: { avatar_url: updated.avatar_url },
+        }),
+      );
     } catch (err) {
       if (!handleUnauthorized(err)) setError(err.message);
     } finally {

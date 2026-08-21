@@ -323,18 +323,17 @@ function AdminInterviews() {
           is notified right away.
         </p>
         <form className="request-form" onSubmit={scheduleInterview}>
-          <select
+          <Select
             className="field"
+            ariaLabel="Application"
             value={selectedApp}
-            onChange={(e) => setSelectedApp(e.target.value)}
-          >
-            <option value="">Select an application…</option>
-            {applications.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.applicant_name} — {a.role_title} ({a.status})
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedApp}
+            placeholder="Select an application…"
+            options={applications.map((a) => ({
+              value: String(a.id),
+              label: `${a.applicant_name} — ${a.role_title} (${a.status})`,
+            }))}
+          />
           <input
             className="field"
             type="datetime-local"
@@ -342,17 +341,19 @@ function AdminInterviews() {
             onChange={(e) => setScheduledAt(e.target.value)}
           />
           <div className="venue-row">
-            <select
+            <Select
               className="field"
+              ariaLabel="Venue type"
               value={venue}
-              onChange={(e) => {
-                setVenue(e.target.value);
+              onChange={(v) => {
+                setVenue(v);
                 setVenueInfo("");
               }}
-            >
-              <option value="online">Online</option>
-              <option value="onsite">Onsite</option>
-            </select>
+              options={[
+                { value: "online", label: "Online" },
+                { value: "onsite", label: "Onsite" },
+              ]}
+            />
             <input
               className="field"
               type="text"

@@ -12,8 +12,6 @@ import {
   CalendarDays,
   FileText,
   Globe,
-  Check,
-  Circle,
 } from "lucide-react";
 import { api, logout } from "../api";
 import ExportButton from "../components/ExportButton.jsx";
@@ -38,8 +36,6 @@ function AdminInternsPage() {
   const [error, setError] = useState("");
   const [promoting, setPromoting] = useState(null);
   const [selectedIntern, setSelectedIntern] = useState(null);
-  const [onboarding, setOnboarding] = useState(null);
-  const [onboardingBusy, setOnboardingBusy] = useState(false);
 
   const handleUnauthorized = useCallback(
     (err) => {
@@ -97,48 +93,6 @@ function AdminInternsPage() {
     offers.filter((o) => Number(o.applicant_id) === Number(internId)).length;
 
   const openIntern = (intern) => setSelectedIntern(intern);
-
-  useEffect(() => {
-    if (!selectedIntern) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await api(`/onboarding?user_id=${selectedIntern.id}`);
-        if (!cancelled) setOnboarding(data);
-      } catch (err) {
-        if (!cancelled && !handleUnauthorized(err)) setError(err.message);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedIntern, handleUnauthorized]);
-
-  const toggleOnboardingStep = async (step) => {
-    if (!selectedIntern || onboardingBusy) return;
-    setOnboardingBusy(true);
-    try {
-      const data = await api(`/onboarding/${step.step_key}`, {
-        method: "PATCH",
-        body: { done: !step.done, user_id: selectedIntern.id },
-      });
-      setOnboarding((prev) => ({
-        ...prev,
-        steps: prev.steps.map((s) =>
-          s.step_key === data.step_key ? { ...s, done: data.done } : s,
-        ),
-        done: prev.done + (data.done ? 1 : -1),
-        progress: Math.round(
-          ((prev.done + (data.done ? 1 : -1)) / prev.total) * 100,
-        ),
-      }));
-      await load();
-    } catch (err) {
-      if (!handleUnauthorized(err)) setError(err.message);
-    } finally {
-      setOnboardingBusy(false);
-    }
-  };
 
   return (
     <div className="page">
@@ -333,45 +287,6 @@ function AdminInternsPage() {
                     </span>
                     <span>{selectedIntern.nationality}</span>
                   </div>
-                )}
-              </div>
-
-              <div className="onboarding-admin-section">
-                <h4 className="onboarding-admin-title">
-                  <ListTodo size={14} /> Onboarding Checklist
-                </h4>
-                {!onboarding ? (
-                  <p className="muted">Loading…</p>
-                ) : (
-                  <ul className="onboarding-admin-list">
-                    {onboarding.steps.map((step) => (
-                      <li
-                        key={step.step_key}
-                        className={step.done ? "done" : ""}
-                      >
-                        <button
-                          className="onboarding-toggle"
-                          onClick={() => toggleOnboardingStep(step)}
-                          disabled={onboardingBusy}
-                          aria-label={`Mark ${step.label} ${step.done ? "incomplete" : "complete"}`}
-                        >
-                          {step.done ? (
-                            <Check size={14} />
-                          ) : (
-                            <Circle size={14} />
-                          )}
-                        </button>
-                        <div className="onboarding-step-info">
-                          <span>{step.label}</span>
-                          {step.guide && (
-                            <small className="onboarding-step-guide">
-                              {step.guide}
-                            </small>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
                 )}
               </div>
 
